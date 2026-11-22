@@ -570,9 +570,10 @@ let selectedCode = {origin:'', dest:''};
   document.getElementById('retDate').value=fmt(ret);
   document.getElementById('depDate').min=fmt(dep).slice(0,10).replace(/^.{8}/,String(today.getDate()).padStart(2,'0')).slice(0,0)||today.toISOString().slice(0,10);
   document.getElementById('depDate').min=today.toISOString().slice(0,10);
-  // set defaults
+  // 출발지만 인천 기본값, 도착지는 비워둠
   setInputVal('origin','ICN','인천국제공항 (ICN)');
-  setInputVal('dest','NRT','나리타국제공항 (NRT)');
+  document.getElementById('dest').value = '';
+  selectedCode['dest'] = '';
   // 예약 버튼 이벤트 위임 — 한 번만 등록
   document.getElementById('results').addEventListener('click', function(e){
     var btn = e.target.closest('[data-flight-idx]');
@@ -1321,7 +1322,7 @@ function openBookModal(info) {
       const goClass    = ota ? {A:'safe',B:'safe',C:'caution',D:'danger'}[ota.grade] : 'safe';
       offersSection = `<div class="modal-offers">
         <div class="modal-trust-header">🛡 예약처</div>
-        <button type="button" onclick="window.open('${info.bookUrl}','_blank','noopener,noreferrer')" class="modal-offer-row modal-go ${goClass}">
+        <button type="button" class="modal-offer-row modal-go ${goClass}" onclick="goBook('${encodeURIComponent(info.bookUrl||'')}',this)">
           <span class="modal-offer-name">${info.providerName||'예약 사이트'}</span>
           <span class="modal-offer-price">₩${krw.toLocaleString()}</span>
           <span class="modal-offer-arrow">→</span>
@@ -1351,8 +1352,9 @@ function openBookModal(info) {
         ? `<span style="font-size:10px;padding:2px 6px;border-radius:4px;background:#1a3a1f;color:#3fb950;border:1px solid #238636;margin-left:6px;">항공사 직접</span>` : '';
       const warn = ota?.grade==='D'
         ? `<span style="font-size:10px;color:#f85149;margin-left:6px;">⚠ 주의</span>` : '';
-      const safeUrl = url.replace(/'/g, "\\'");
-      return `<button type="button" onclick="window.open('${safeUrl}','_blank','noopener,noreferrer')" class="modal-offer-row modal-go ${goClass}">
+      // 모달 버튼은 클릭 직후 동기 컨텍스트이므로 window.open() 팝업 차단 없음
+      var encodedUrl = encodeURIComponent(url||'');
+      return `<button type="button" class="modal-offer-row modal-go ${goClass}" onclick="goBook('${encodedUrl}',this)">
         <span class="modal-offer-name">${name}${badge}${warn}</span>
         <span class="modal-offer-price">₩${offerPrice.toLocaleString()}</span>
         <span class="modal-offer-arrow">→</span>
@@ -1419,6 +1421,14 @@ function corsHelpHtml(isCors,msg){
     </div>
   </div>`;
 }
+// 모달 예약 버튼 클릭 핸들러 — 클릭과 동시에 동기 컨텍스트에서 새 탭 열기
+function goBook(encodedUrl, btn) {
+  var url = decodeURIComponent(encodedUrl);
+  if (!url || url === '#') return;
+  if (btn) btn.style.opacity = '0.6';
+  window.open(url, '_blank', 'noopener,noreferrer');
+}
+
 function extractCode(val){
   // Try IATA code in parens like "나리타국제공항 (NRT)"
   const m=val.match(/\(([A-Z]{3})\)/);
@@ -1437,7 +1447,15 @@ async function bookFlight(idx) {
   var info = flightStore[idx];
   if (!info) return;
 
-  // 로딩 모달 표시
+  // ── 클릭 직후(동기 컨텍스트)에 새 탭을 열어 팝업 차단 우회
+  //    탭에 로딩 HTML을 넣고, API 완료 후 location.href 를 교체한다
+  var newTab = window.open('', '_blank');
+  if (newTab) {
+    newTab.document.write('<html><head><title>로딩 중...</title></head><body style="background:#0d1117;color:#8b949e;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;"><div style="text-align:center"><div style="font-size:2rem;margin-bottom:12px;">✈</div><div>예약 링크를 불러오는 중입니다…</div></div></body></html>');
+    newTab.document.close();
+  }
+
+  // 모달 로딩 표시
   document.getElementById('modalRoot').innerHTML = `
   <div class="modal-overlay" id="bookModal">
     <div class="modal-box" style="text-align:center;padding:40px;">
@@ -1447,7 +1465,6 @@ async function bookFlight(idx) {
   </div>`;
 
   try {
-    // booking-links API 호출
     let bookingData;
     const body = { ignav_id: info.ignavId };
     if (proxyBase) {
@@ -1466,15 +1483,22 @@ async function bookFlight(idx) {
       bookingData = await r.json();
     }
 
-    // 첫 번째 booking option URL 추출
     const offers = bookingData?.booking_options || bookingData?.offers || bookingData?.results || [];
     const firstOffer = offers[0];
-    const bookUrl = firstOffer?.url || firstOffer?.booking_url || '#';
+    const bookUrl = firstOffer?.url || firstOffer?.booking_url || '';
     const providerName = firstOffer?.provider_name || firstOffer?.name || '';
+
+    // ── 첫 번째 URL로 미리 열어둔 탭 이동
+    if (newTab && bookUrl) {
+      newTab.location.href = bookUrl;
+    } else if (newTab) {
+      newTab.close(); // URL 없으면 탭 닫기
+    }
 
     openBookModal({ ...info, bookUrl, providerName, allOffers: offers });
   } catch (e) {
-    openBookModal({ ...info, bookUrl: '#', providerName: '', allOffers: [] });
+    if (newTab) newTab.close();
+    openBookModal({ ...info, bookUrl: '', providerName: '', allOffers: [] });
   }
 }
 

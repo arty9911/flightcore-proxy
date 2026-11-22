@@ -1,0 +1,12 @@
+{
+  "name": "flightcore-proxy",
+  "version": "1.0.0",
+  "description": "FlightCore — Ignav API CORS 프록시 (Vercel Serverless)",
+  "type": "module",
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "devDependencies": {
+    "vercel": "^37.0.0"
+  }
+}

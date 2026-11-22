@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "functions": {
+    "api/fares.js":    { "maxDuration": 30 },
+    "api/airports.js": { "maxDuration": 10 }
+  },
+  "rewrites": [
+    { "source": "/api/fares",    "destination": "/api/fares" },
+    { "source": "/api/airports", "destination": "/api/airports" },
+    { "source": "/",             "destination": "/public/index.html" }
+  ]
+}

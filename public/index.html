@@ -1,0 +1,1413 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FlightCore — MVP 항공편 검색</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif;background:#0d1117;color:#e6edf3;min-height:100vh;}
+header{padding:20px 24px;border-bottom:1px solid #21262d;display:flex;align-items:center;gap:12px;}
+.logo{font-size:1.3rem;font-weight:800;background:linear-gradient(135deg,#39d353,#58a6ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.logo-sub{font-size:11px;color:#8b949e;margin-top:2px;}
+.hero{text-align:center;padding:36px 24px 24px;}
+.hero h1{font-size:1.8rem;font-weight:800;margin-bottom:8px;}
+.hero h1 span{background:linear-gradient(135deg,#39d353,#58a6ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.hero p{color:#8b949e;font-size:.9rem;}
+.tab-wrap{display:flex;justify-content:center;margin:0 auto 20px;width:fit-content;background:#161b22;border-radius:10px;padding:4px;border:1px solid #30363d;}
+.tab{padding:7px 18px;border-radius:7px;font-size:13px;cursor:pointer;color:#8b949e;border:none;background:none;transition:all.2s;}
+.tab.active{background:#21262d;color:#e6edf3;font-weight:700;}
+.subtab{padding:5px 14px;border-radius:6px;font-size:12px;cursor:pointer;color:#8b949e;border:none;background:none;transition:all.2s;font-weight:600;}
+.subtab.active{background:#21262d;color:#e6edf3;}
+/* CALENDAR */
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+.cal-dow{font-size:11px;color:#8b949e;text-align:center;padding:4px 0;font-weight:600;}
+.cal-dow:first-child{color:#f85149;}
+.cal-dow:last-child{color:#58a6ff;}
+.cal-cell{border-radius:8px;padding:6px 4px;text-align:center;min-height:62px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;border:1px solid transparent;transition:all.15s;position:relative;}
+.cal-cell:hover{border-color:#58a6ff!important;}
+.cal-cell.empty{cursor:default;background:none;}
+.cal-cell.past{opacity:.4;cursor:default;}
+.cal-cell.today{border:1px solid #58a6ff!important;}
+.cal-cell.selected{border:2px solid #39d353!important;}
+.cal-day{font-size:12px;font-weight:700;}
+.cal-price{font-size:10px;font-weight:800;line-height:1.2;}
+.cal-loading-dot{width:14px;height:3px;border-radius:2px;background:#30363d;animation:calPulse 1.2s ease-in-out infinite;}
+@keyframes calPulse{0%,100%{opacity:.3}50%{opacity:1}}
+.search-box{max-width:720px;margin:0 auto;padding:0 16px;}
+.search-card{background:#161b22;border:1px solid #30363d;border-radius:14px;padding:22px;}
+.origin-row{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:end;margin-bottom:12px;}
+.row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px;}
+.row-4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:12px;}
+.field{display:flex;flex-direction:column;gap:5px;position:relative;}
+.field label{font-size:11px;color:#8b949e;font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+.field input,.field select{background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:11px 13px;color:#e6edf3;font-size:.95rem;width:100%;outline:none;transition:border-color.2s;}
+.field input:focus,.field select:focus{border-color:#58a6ff;}
+.field select option{background:#0d1117;}
+/* AUTOCOMPLETE */
+.ac-box{position:absolute;top:100%;left:0;right:0;background:#1c2128;border:1px solid #30363d;border-top:none;border-radius:0 0 8px 8px;z-index:100;max-height:200px;overflow-y:auto;display:none;}
+.ac-item{padding:9px 13px;cursor:pointer;font-size:.88rem;border-bottom:1px solid #21262d;display:flex;flex-direction:column;gap:2px;}
+.ac-item:last-child{border-bottom:none;}
+.ac-item:hover,.ac-item.selected{background:#21262d;}
+.ac-code{font-weight:700;color:#58a6ff;font-size:.9rem;}
+.ac-name{color:#8b949e;font-size:.8rem;}
+.ac-box.open{display:block;}
+.swap-btn{background:none;border:1px solid #30363d;border-radius:50%;width:34px;height:34px;color:#8b949e;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;align-self:flex-end;margin-bottom:2px;transition:all.2s;flex-shrink:0;}
+.swap-btn:hover{border-color:#58a6ff;color:#58a6ff;}
+.search-btn{width:100%;padding:14px;background:linear-gradient(135deg,#238636,#2ea043);border:none;border-radius:10px;color:#fff;font-size:1rem;font-weight:700;cursor:pointer;transition:opacity.2s;margin-top:4px;}
+.search-btn:hover{opacity:.88;}
+.search-btn:disabled{opacity:.5;cursor:not-allowed;}
+/* RESULTS */
+#results{max-width:720px;margin:20px auto;padding:0 16px 48px;}
+.result-header{font-size:.85rem;color:#8b949e;margin-bottom:12px;}
+.result-header strong{color:#e6edf3;}
+.flight-card{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:18px;margin-bottom:10px;transition:border-color.2s;}
+.flight-card:hover{border-color:#58a6ff;}
+.fc-top{display:flex;justify-content:space-between;align-items:flex-start;}
+.fc-route{display:flex;align-items:center;gap:10px;flex:1;}
+.fc-airport{text-align:center;min-width:52px;}
+.fc-time{font-size:1.1rem;font-weight:800;}
+.fc-code{font-size:11px;color:#8b949e;}
+.fc-line{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;}
+.fc-dur{font-size:11px;color:#8b949e;}
+.fc-stops{font-size:11px;padding:2px 8px;border-radius:10px;}
+.fc-stops.direct{background:#1a3a1f;color:#3fb950;}
+.fc-stops.one{background:#2d2000;color:#d29922;}
+.fc-stops.multi{background:#2d1a1a;color:#f85149;}
+.fc-line-bar{height:1px;background:#30363d;width:100%;}
+.fc-price-block{text-align:right;padding-left:12px;}
+.fc-price{font-size:1.35rem;font-weight:800;color:#39d353;}
+.fc-per{font-size:11px;color:#8b949e;}
+.fc-airline{font-size:12px;color:#8b949e;margin-top:2px;}
+.fc-bottom{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid #21262d;}
+.fc-tags{display:flex;gap:6px;flex-wrap:wrap;}
+.fc-tag{font-size:11px;padding:3px 8px;border-radius:10px;border:1px solid #30363d;color:#8b949e;}
+.fc-tag.cheapest{border-color:#39d353;color:#39d353;}
+.fc-tag.fastest{border-color:#58a6ff;color:#58a6ff;}
+.book-btn{padding:8px 18px;background:#1f6feb;border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;text-decoration:none;}
+.book-btn:hover{background:#388bfd;}
+/* OTA TRUST */
+.trust-wrap{margin-top:12px;padding:12px;background:#0d1117;border-radius:8px;border:1px solid #21262d;}
+.trust-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.trust-label{font-size:11px;color:#8b949e;}
+.trust-score-row{display:flex;align-items:center;gap:8px;}
+.trust-badge{font-size:12px;font-weight:800;padding:3px 10px;border-radius:12px;}
+.trust-A{background:#1a3a1f;color:#3fb950;border:1px solid #238636;}
+.trust-B{background:#1a2d3a;color:#58a6ff;border:1px solid #1f6feb;}
+.trust-C{background:#2d2000;color:#d29922;border:1px solid #9e6a03;}
+.trust-D{background:#2d1a1a;color:#f85149;border:1px solid #b91c1c;}
+.trust-bar-bg{flex:1;height:5px;background:#21262d;border-radius:3px;overflow:hidden;}
+.trust-bar{height:100%;border-radius:3px;transition:width .6s ease;}
+.trust-items{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+.trust-item{font-size:10px;padding:2px 7px;border-radius:8px;border:1px solid #30363d;color:#8b949e;}
+.trust-item.good{border-color:#238636;color:#3fb950;}
+.trust-item.bad{border-color:#b91c1c;color:#f85149;}
+.trust-warning{font-size:11px;color:#d29922;margin-top:6px;padding:6px 8px;background:#2d2000;border-radius:6px;border-left:3px solid #9e6a03;}
+.loading{text-align:center;padding:48px;color:#8b949e;}
+.spinner{width:36px;height:36px;border:3px solid #30363d;border-top-color:#58a6ff;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 16px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.error-box{background:#2d1a1a;border:1px solid #f85149;border-radius:10px;padding:18px;color:#f85149;font-size:.9rem;}
+.empty{text-align:center;padding:48px;color:#8b949e;}
+.api-notice{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:12px 16px;font-size:12px;color:#8b949e;max-width:720px;margin:0 auto 16px;display:flex;align-items:center;gap:10px;}
+.api-notice input{background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:6px 10px;color:#e6edf3;font-size:12px;flex:1;outline:none;font-family:monospace;}
+.api-notice input:focus{border-color:#58a6ff;}
+/* COMPARE */
+.cmp-fab{position:fixed;bottom:24px;right:24px;z-index:800;background:linear-gradient(135deg,#1f6feb,#388bfd);border:none;border-radius:50px;padding:12px 20px;color:#fff;font-size:13px;font-weight:800;cursor:pointer;box-shadow:0 4px 20px rgba(31,111,235,.5);display:none;align-items:center;gap:8px;transition:all.2s;}
+.cmp-fab:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(31,111,235,.6);}
+.cmp-badge{background:#f85149;border-radius:50%;width:20px;height:20px;font-size:11px;display:inline-flex;align-items:center;justify-content:center;}
+.add-cmp-btn{padding:5px 11px;background:none;border:1px solid #30363d;border-radius:6px;color:#8b949e;font-size:11px;font-weight:600;cursor:pointer;transition:all.15s;}
+.add-cmp-btn:hover{border-color:#58a6ff;color:#58a6ff;}
+.add-cmp-btn.added{border-color:#39d353;color:#39d353;background:#1a3a1f;}
+.add-cmp-btn.added:hover{border-color:#f85149;color:#f85149;background:#2d1a1a;}
+.cmp-panel{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.8);display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;animation:fadeIn .15s ease;}
+.cmp-box{background:#161b22;border:1px solid #30363d;border-radius:16px;padding:24px;width:100%;max-width:900px;margin:auto;}
+.cmp-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
+.cmp-title{font-size:1rem;font-weight:800;}
+.cmp-close{background:none;border:1px solid #30363d;border-radius:8px;padding:6px 12px;color:#8b949e;cursor:pointer;font-size:13px;}
+.cmp-table{width:100%;border-collapse:collapse;}
+.cmp-table th{padding:10px 14px;text-align:left;font-size:11px;color:#8b949e;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #21262d;background:#0d1117;}
+.cmp-table th:first-child{border-radius:8px 0 0 0;}
+.cmp-table th:last-child{border-radius:0 8px 0 0;}
+.cmp-table td{padding:10px 14px;font-size:13px;border-bottom:1px solid #21262d;vertical-align:top;}
+.cmp-table tr:last-child td{border-bottom:none;}
+.cmp-table .row-label{color:#8b949e;font-size:11px;font-weight:600;text-transform:uppercase;background:#0d1117;width:120px;}
+.cmp-best{background:#1a3a1f!important;color:#3fb950!important;font-weight:800;}
+.cmp-worst{background:#2d1a1a!important;color:#f85149!important;}
+/* HIDDEN FEES */
+.fee-wrap{margin-top:12px;padding:12px;background:#0d1117;border-radius:8px;border:1px solid #21262d;}
+.fee-title{font-size:11px;color:#8b949e;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:5px;}
+.fee-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #161b22;}
+.fee-row:last-child{border-bottom:none;}
+.fee-name{font-size:11px;color:#8b949e;display:flex;align-items:center;gap:4px;}
+.fee-name .fi{font-size:10px;padding:1px 5px;border-radius:5px;border:1px solid #30363d;}
+.fee-amt{font-size:12px;font-weight:700;}
+.fee-amt.included{color:#3fb950;}
+.fee-amt.extra{color:#f85149;}
+.fee-amt.maybe{color:#d29922;}
+.fee-total-row{margin-top:8px;padding-top:8px;border-top:1px solid #30363d;display:flex;justify-content:space-between;align-items:center;}
+.fee-total-label{font-size:12px;color:#8b949e;font-weight:700;}
+.fee-total-amt{font-size:1rem;font-weight:800;}
+.fee-total-amt.ok{color:#3fb950;}
+.fee-total-amt.warn{color:#d29922;}
+.fee-total-amt.danger{color:#f85149;}
+/* BOOKING MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px;animation:fadeIn .15s ease;}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal-box{background:#161b22;border:1px solid #30363d;border-radius:16px;padding:28px;max-width:480px;width:100%;animation:slideUp .2s ease;}
+@keyframes slideUp{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-title{font-size:1rem;font-weight:800;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.modal-flight-info{background:#0d1117;border-radius:10px;padding:14px;margin-bottom:16px;}
+.modal-flight-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+.modal-flight-row:last-child{margin-bottom:0;}
+.mfr-label{font-size:11px;color:#8b949e;}
+.mfr-val{font-size:13px;font-weight:700;}
+.mfr-price{font-size:1.3rem;font-weight:800;color:#39d353;}
+.modal-trust{margin-bottom:16px;}
+.modal-trust-header{font-size:11px;color:#8b949e;margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+.modal-trust-body{background:#0d1117;border-radius:10px;padding:14px;}
+.modal-grade-row{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+.modal-grade-badge{font-size:1.5rem;font-weight:900;padding:8px 16px;border-radius:10px;}
+.modal-ota-name{font-size:15px;font-weight:800;}
+.modal-ota-sub{font-size:11px;color:#8b949e;margin-top:2px;}
+.modal-warn-box{background:#2d2000;border:1px solid #9e6a03;border-radius:8px;padding:10px 12px;font-size:12px;color:#d29922;margin-bottom:10px;line-height:1.6;}
+.modal-warn-box.danger{background:#2d1a1a;border-color:#b91c1c;color:#f85149;}
+.modal-tags{display:flex;gap:5px;flex-wrap:wrap;}
+.modal-tag{font-size:10px;padding:2px 8px;border-radius:8px;border:1px solid #30363d;color:#8b949e;}
+.modal-tag.good{border-color:#238636;color:#3fb950;}
+.modal-tag.bad{border-color:#b91c1c;color:#f85149;}
+.modal-actions{display:flex;gap:10px;}
+.modal-cancel{flex:1;padding:12px;background:none;border:1px solid #30363d;border-radius:10px;color:#8b949e;font-size:14px;cursor:pointer;font-weight:600;}
+.modal-cancel:hover{border-color:#8b949e;color:#e6edf3;}
+.modal-go{flex:2;padding:12px;border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:800;cursor:pointer;text-decoration:none;display:block;text-align:center;}
+.modal-go.safe{background:linear-gradient(135deg,#238636,#2ea043);}
+.modal-go.caution{background:linear-gradient(135deg,#9e6a03,#d29922);}
+.modal-go.danger{background:linear-gradient(135deg,#b91c1c,#f85149);}
+.modal-no-ota{text-align:center;padding:16px;color:#8b949e;font-size:13px;}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="logo">✈ FlightCore</div>
+    <div class="logo-sub">정직한 항공권 검색</div>
+  </div>
+</header>
+<div class="hero">
+  <h1>숨겨진 수수료 없이<br><span>진짜 최저가</span>를 찾아드립니다</h1>
+  <p style="margin-top:8px;">총 비용 투명 공개 · 한국 LCC 완전 연동 · AI 가격 예측</p>
+</div>
+
+<div class="api-notice" style="flex-wrap:wrap;gap:8px;">
+  <span style="white-space:nowrap;">🔑 API Key</span>
+  <input type="password" id="apiKey" placeholder="Ignav API Key (로컬용)" style="min-width:160px;">
+  <span style="color:#30363d;">|</span>
+  <span style="white-space:nowrap;color:#8b949e;">🌐 프록시</span>
+  <input type="text" id="proxyUrl" placeholder="https://your-proxy.vercel.app (선택)" style="min-width:200px;flex:2;">
+  <button onclick="saveKey()" style="background:#238636;border:none;border-radius:6px;padding:6px 12px;color:#fff;font-size:12px;cursor:pointer;white-space:nowrap;">저장</button>
+  <span id="keyStatus" style="font-size:11px;white-space:nowrap;"></span>
+</div>
+
+<div class="tab-wrap">
+  <button class="tab active" onclick="setMainTab('search',this)">🔍 검색</button>
+  <button class="tab" onclick="setMainTab('calendar',this)">📅 가격 캘린더</button>
+</div>
+
+<div id="searchPanel">
+<div class="search-box">
+  <div class="search-card">
+    <div style="display:flex;justify-content:center;margin-bottom:16px;">
+      <div style="background:#0d1117;border-radius:8px;padding:3px;border:1px solid #21262d;display:inline-flex;">
+        <button class="subtab active" id="st_oneway" onclick="setTab('oneway',this)">편도</button>
+        <button class="subtab" id="st_roundtrip" onclick="setTab('roundtrip',this)">왕복</button>
+      </div>
+    </div>
+    <div class="origin-row">
+      <div class="field" id="originField">
+        <label>출발지</label>
+        <input id="origin" type="text" placeholder="도시 또는 공항명" autocomplete="off"
+          oninput="onAcInput('origin')" onkeydown="onAcKey(event,'origin')" onfocus="onAcInput('origin')" onblur="hideAc('origin')">
+        <div class="ac-box" id="originAc"></div>
+      </div>
+      <button class="swap-btn" onclick="swapAirports()" title="교환">⇄</button>
+      <div class="field" id="destField">
+        <label>도착지</label>
+        <input id="dest" type="text" placeholder="도시 또는 공항명" autocomplete="off"
+          oninput="onAcInput('dest')" onkeydown="onAcKey(event,'dest')" onfocus="onAcInput('dest')" onblur="hideAc('dest')">
+        <div class="ac-box" id="destAc"></div>
+      </div>
+    </div>
+    <div class="row-4">
+      <div class="field">
+        <label>출발일</label>
+        <input id="depDate" type="date">
+      </div>
+      <div class="field" id="retDateWrap" style="opacity:.35;">
+        <label>귀국일</label>
+        <input id="retDate" type="date" disabled>
+      </div>
+      <div class="field">
+        <label>성인</label>
+        <select id="adults"><option>1</option><option>2</option><option>3</option><option>4</option></select>
+      </div>
+      <div class="field">
+        <label>좌석</label>
+        <select id="cabin">
+          <option value="economy">이코노미</option>
+          <option value="premium_economy">프리미엄 이코노미</option>
+          <option value="business">비즈니스</option>
+          <option value="first">퍼스트</option>
+        </select>
+      </div>
+    </div>
+    <button class="search-btn" onclick="search()" id="searchBtn">🔍 항공편 검색</button>
+  </div>
+</div>
+</div><!-- /searchPanel -->
+
+<!-- CALENDAR PANEL -->
+<div id="calendarPanel" style="display:none;max-width:720px;margin:0 auto;padding:0 16px 48px;">
+  <div style="background:#161b22;border:1px solid #30363d;border-radius:14px;padding:22px;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:140px;">
+        <div style="font-size:11px;color:#8b949e;margin-bottom:5px;font-weight:600;text-transform:uppercase;">출발지</div>
+        <div id="calOriginLabel" style="font-size:.9rem;color:#e6edf3;background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:9px 13px;">ICN — 인천</div>
+      </div>
+      <div style="font-size:1.2rem;color:#30363d;">→</div>
+      <div style="flex:1;min-width:140px;">
+        <div style="font-size:11px;color:#8b949e;margin-bottom:5px;font-weight:600;text-transform:uppercase;">도착지</div>
+        <div id="calDestLabel" style="font-size:.9rem;color:#e6edf3;background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:9px 13px;">NRT — 나리타</div>
+      </div>
+      <div style="flex:0 0 auto;">
+        <div style="font-size:11px;color:#8b949e;margin-bottom:5px;font-weight:600;text-transform:uppercase;">좌석</div>
+        <div id="calCabinLabel" style="font-size:.9rem;color:#e6edf3;background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:9px 13px;">이코노미</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+      <button onclick="calNav(-1)" style="background:none;border:1px solid #30363d;border-radius:8px;padding:6px 12px;color:#8b949e;cursor:pointer;font-size:1rem;">‹</button>
+      <div id="calMonthLabel" style="flex:1;text-align:center;font-size:1rem;font-weight:800;"></div>
+      <button onclick="calNav(1)" style="background:none;border:1px solid #30363d;border-radius:8px;padding:6px 12px;color:#8b949e;cursor:pointer;font-size:1rem;">›</button>
+      <button onclick="loadCalendar()" id="calRefreshBtn" style="background:#238636;border:none;border-radius:8px;padding:7px 14px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;">새로고침</button>
+    </div>
+    <div id="calGrid"></div>
+    <div id="calLegend" style="display:flex;gap:12px;margin-top:14px;flex-wrap:wrap;align-items:center;">
+      <span style="font-size:11px;color:#8b949e;">가격 단계:</span>
+      <span style="display:flex;align-items:center;gap:5px;font-size:11px;"><span style="width:12px;height:12px;border-radius:3px;background:#1a3a1f;border:1px solid #238636;display:inline-block;"></span> 최저가</span>
+      <span style="display:flex;align-items:center;gap:5px;font-size:11px;"><span style="width:12px;height:12px;border-radius:3px;background:#2d2000;border:1px solid #9e6a03;display:inline-block;"></span> 중간</span>
+      <span style="display:flex;align-items:center;gap:5px;font-size:11px;"><span style="width:12px;height:12px;border-radius:3px;background:#2d1a1a;border:1px solid #b91c1c;display:inline-block;"></span> 비쌈</span>
+      <span style="display:flex;align-items:center;gap:5px;font-size:11px;"><span style="width:12px;height:12px;border-radius:3px;background:#21262d;display:inline-block;"></span> 데이터 없음</span>
+    </div>
+  </div>
+</div>
+
+<div id="results"></div>
+<div id="modalRoot"></div>
+<button class="cmp-fab" id="compareFab" onclick="openComparePanel()">
+  📋 비교하기 <span class="cmp-badge">0</span>
+</button>
+
+<!-- CAL LOADING OVERLAY -->
+<div id="calLoading" style="display:none;position:fixed;inset:0;background:rgba(13,17,23,.75);z-index:900;display:none;align-items:center;justify-content:center;">
+  <div style="background:#161b22;border:1px solid #30363d;border-radius:14px;padding:32px 40px;text-align:center;">
+    <div class="spinner" style="margin:0 auto 16px;"></div>
+    <div style="color:#8b949e;font-size:.9rem;">날짜별 가격 불러오는 중...</div>
+    <div id="calProgress" style="font-size:.8rem;color:#58a6ff;margin-top:8px;"></div>
+  </div>
+</div>
+
+<script>
+// ───────────────────────────────
+// POPULAR AIRPORTS (Korean-first)
+// ───────────────────────────────
+const LOCAL_AIRPORTS = [
+  {code:'ICN',name:'인천국제공항',city:'인천 / 서울',country:'한국',tags:['인천','서울','icn','incheon','seoul']},
+  {code:'GMP',name:'김포국제공항',city:'서울',country:'한국',tags:['김포','서울','gmp','gimpo','seoul']},
+  {code:'PUS',name:'김해국제공항',city:'부산',country:'한국',tags:['부산','김해','pus','busan']},
+  {code:'CJU',name:'제주국제공항',city:'제주',country:'한국',tags:['제주','cju','jeju']},
+  {code:'TAE',name:'대구국제공항',city:'대구',country:'한국',tags:['대구','tae','daegu']},
+  {code:'CJJ',name:'청주국제공항',city:'청주',country:'한국',tags:['청주','cjj','cheongju']},
+  {code:'NRT',name:'나리타국제공항',city:'도쿄',country:'일본',tags:['나리타','도쿄','nrt','narita','tokyo']},
+  {code:'HND',name:'하네다공항',city:'도쿄',country:'일본',tags:['하네다','도쿄','hnd','haneda','tokyo']},
+  {code:'KIX',name:'간사이국제공항',city:'오사카',country:'일본',tags:['오사카','간사이','kix','osaka','kansai']},
+  {code:'FUK',name:'후쿠오카공항',city:'후쿠오카',country:'일본',tags:['후쿠오카','fuk','fukuoka']},
+  {code:'CTS',name:'신치토세공항',city:'삿포로',country:'일본',tags:['삿포로','신치토세','cts','sapporo']},
+  {code:'OKA',name:'나하공항',city:'오키나와',country:'일본',tags:['오키나와','나하','oka','okinawa','naha']},
+  {code:'NGO',name:'주부국제공항',city:'나고야',country:'일본',tags:['나고야','주부','ngo','nagoya']},
+  {code:'HKG',name:'홍콩국제공항',city:'홍콩',country:'홍콩',tags:['홍콩','hkg','hong kong','hongkong']},
+  {code:'BKK',name:'수완나품국제공항',city:'방콕',country:'태국',tags:['방콕','수완나품','bkk','bangkok']},
+  {code:'DMK',name:'돈므앙국제공항',city:'방콕',country:'태국',tags:['방콕','돈므앙','dmk','bangkok','donmueang']},
+  {code:'SIN',name:'창이국제공항',city:'싱가포르',country:'싱가포르',tags:['싱가포르','창이','sin','singapore','changi']},
+  {code:'TPE',name:'타오위안국제공항',city:'타이베이',country:'대만',tags:['타이베이','대만','타오위안','tpe','taipei','taiwan']},
+  {code:'PEK',name:'베이징수도국제공항',city:'베이징',country:'중국',tags:['베이징','북경','pek','beijing']},
+  {code:'PKX',name:'베이징다싱국제공항',city:'베이징',country:'중국',tags:['베이징','다싱','pkx','beijing daxing']},
+  {code:'PVG',name:'상하이푸둥국제공항',city:'상하이',country:'중국',tags:['상하이','푸둥','pvg','shanghai']},
+  {code:'SHA',name:'상하이훙차오공항',city:'상하이',country:'중국',tags:['상하이','홍교','sha','shanghai','hongqiao']},
+  {code:'CAN',name:'광저우바이윈국제공항',city:'광저우',country:'중국',tags:['광저우','광주','can','guangzhou']},
+  {code:'MNL',name:'니노이아키노국제공항',city:'마닐라',country:'필리핀',tags:['마닐라','필리핀','mnl','manila','philippines']},
+  {code:'CEB',name:'막탄세부국제공항',city:'세부',country:'필리핀',tags:['세부','막탄','ceb','cebu']},
+  {code:'DPS',name:'응우라라이국제공항',city:'발리',country:'인도네시아',tags:['발리','덴파사르','dps','bali','denpasar']},
+  {code:'KUL',name:'쿠알라룸푸르국제공항',city:'쿠알라룸푸르',country:'말레이시아',tags:['쿠알라룸푸르','kul','kuala lumpur']},
+  {code:'VIE',name:'비엔나국제공항',city:'비엔티안',country:'라오스',tags:['비엔티안','vie','vientiane']},
+  {code:'RGN',name:'양곤국제공항',city:'양곤',country:'미얀마',tags:['양곤','rgn','yangon']},
+  {code:'HAN',name:'노이바이국제공항',city:'하노이',country:'베트남',tags:['하노이','노이바이','han','hanoi']},
+  {code:'SGN',name:'탄손낫국제공항',city:'호치민',country:'베트남',tags:['호치민','탄손낫','sgn','ho chi minh','saigon']},
+  {code:'DAD',name:'다낭국제공항',city:'다낭',country:'베트남',tags:['다낭','dad','da nang']},
+  {code:'DEL',name:'인디라간디국제공항',city:'뉴델리',country:'인도',tags:['뉴델리','델리','del','delhi','new delhi']},
+  {code:'BOM',name:'차트라파티시바지공항',city:'뭄바이',country:'인도',tags:['뭄바이','봄베이','bom','mumbai']},
+  {code:'DXB',name:'두바이국제공항',city:'두바이',country:'UAE',tags:['두바이','dxb','dubai']},
+  {code:'IST',name:'이스탄불공항',city:'이스탄불',country:'튀르키예',tags:['이스탄불','ist','istanbul','turkey']},
+  {code:'CDG',name:'샤를드골국제공항',city:'파리',country:'프랑스',tags:['파리','프랑스','유럽','cdg','paris','france','europe','charles de gaulle']},
+  {code:'LHR',name:'히드로공항',city:'런던',country:'영국',tags:['런던','히드로','영국','유럽','lhr','london','heathrow','uk','england','europe']},
+  {code:'FRA',name:'프랑크푸르트공항',city:'프랑크푸르트',country:'독일',tags:['프랑크푸르트','독일','유럽','fra','frankfurt','germany','europe']},
+  {code:'AMS',name:'스키폴공항',city:'암스테르담',country:'네덜란드',tags:['암스테르담','네덜란드','유럽','ams','amsterdam','schiphol','netherlands','europe']},
+  {code:'ZRH',name:'취리히공항',city:'취리히',country:'스위스',tags:['취리히','스위스','유럽','zrh','zurich','zürich','switzerland','europe']},
+  {code:'FCO',name:'레오나르도다빈치공항',city:'로마',country:'이탈리아',tags:['로마','이탈리아','유럽','fco','rome','roma','italy','europe']},
+  {code:'MAD',name:'아돌포수아레스마드리드바라하스공항',city:'마드리드',country:'스페인',tags:['마드리드','스페인','유럽','mad','madrid','spain','europe']},
+  {code:'BCN',name:'엘프라트공항',city:'바르셀로나',country:'스페인',tags:['바르셀로나','스페인','유럽','bcn','barcelona','spain','europe']},
+  {code:'JFK',name:'존F케네디국제공항',city:'뉴욕',country:'미국',tags:['뉴욕','뉴욕시','미국','jfk','new york','nyc','usa','america']},
+  {code:'LAX',name:'로스앤젤레스국제공항',city:'로스앤젤레스',country:'미국',tags:['로스앤젤레스','라','미국','lax','los angeles','usa','america']},
+  {code:'ORD',name:'오헤어국제공항',city:'시카고',country:'미국',tags:['시카고','미국','ord','chicago','ohare','usa','america']},
+  {code:'SFO',name:'샌프란시스코국제공항',city:'샌프란시스코',country:'미국',tags:['샌프란시스코','미국','sfo','san francisco','usa','america']},
+  {code:'SEA',name:'시애틀타코마국제공항',city:'시애틀',country:'미국',tags:['시애틀','미국','sea','seattle','usa','america']},
+  {code:'IAD',name:'워싱턴덜레스국제공항',city:'워싱턴DC',country:'미국',tags:['워싱턴','워싱턴dc','미국','iad','washington','dulles','usa','america']},
+  {code:'ATL',name:'하츠필드잭슨애틀랜타국제공항',city:'애틀랜타',country:'미국',tags:['애틀랜타','미국','atl','atlanta','usa','america']},
+  {code:'LAS',name:'해리리드국제공항',city:'라스베이거스',country:'미국',tags:['라스베이거스','미국','las','las vegas','usa','america']},
+  {code:'YVR',name:'밴쿠버국제공항',city:'밴쿠버',country:'캐나다',tags:['밴쿠버','캐나다','yvr','vancouver','canada']},
+  {code:'YYZ',name:'토론토피어슨국제공항',city:'토론토',country:'캐나다',tags:['토론토','캐나다','yyz','toronto','canada']},
+  {code:'SYD',name:'킹스퍼드스미스공항',city:'시드니',country:'호주',tags:['시드니','호주','syd','sydney','australia']},
+  {code:'MEL',name:'멜버른공항',city:'멜버른',country:'호주',tags:['멜버른','호주','mel','melbourne','australia']},
+  {code:'GUM',name:'괌국제공항',city:'괌',country:'괌',tags:['괌','gum','guam']},
+  {code:'SPN',name:'사이판국제공항',city:'사이판',country:'사이판',tags:['사이판','spn','saipan']},
+  {code:'HNL',name:'다니엘K이노우에국제공항',city:'호놀룰루',country:'미국',tags:['호놀룰루','하와이','미국','hnl','honolulu','hawaii','usa','america']},
+];
+
+// ───────────────────────────────
+// STATE
+// ───────────────────────────────
+let tripType = 'oneway';
+let mainTab = 'search';
+let compareList = []; // [{idx, ...flightStore data}]
+let calYear, calMonth; // current calendar month
+let calData = {}; // { 'YYYY-MM-DD': minPrice }
+let calAbort = null; // AbortController
+let apiKey = '';
+let proxyBase = ''; // e.g. 'https://your-proxy.vercel.app'
+let acSelected = {origin:-1, dest:-1};
+let acResults  = {origin:[], dest:[]};
+let acTimer    = {origin:null, dest:null};
+let selectedCode = {origin:'', dest:''};
+
+// ───────────────────────────────
+// INIT
+// ───────────────────────────────
+(function(){
+  // Vercel에서 실행 중이면 프록시를 자기 자신(같은 도메인)으로 자동 설정
+  const isVercel = location.hostname.includes('.vercel.app') || location.protocol === 'https:' && !location.hostname.includes('claude.ai') && location.hostname !== 'localhost';
+  if(isVercel && !localStorage.getItem('fc_proxy')){
+    proxyBase = location.origin;
+    document.getElementById('proxyUrl').value = location.origin;
+    setKeyStatus(true);
+  }
+  const saved = localStorage.getItem('fc_apikey');
+  if(saved){ apiKey=saved; document.getElementById('apiKey').value=saved; }
+  const savedProxy = localStorage.getItem('fc_proxy');
+  if(savedProxy){ proxyBase=savedProxy; document.getElementById('proxyUrl').value=savedProxy; }
+  else if(isVercel){ proxyBase=location.origin; document.getElementById('proxyUrl').value=location.origin; }
+  if(saved||savedProxy||isVercel) setKeyStatus(true);
+  const today = new Date();
+  const dep = new Date(today); dep.setDate(dep.getDate()+14);
+  const ret = new Date(dep);  ret.setDate(ret.getDate()+5);
+  document.getElementById('depDate').value=fmt(dep);
+  document.getElementById('retDate').value=fmt(ret);
+  document.getElementById('depDate').min=fmt(dep).slice(0,10).replace(/^.{8}/,String(today.getDate()).padStart(2,'0')).slice(0,0)||today.toISOString().slice(0,10);
+  document.getElementById('depDate').min=today.toISOString().slice(0,10);
+  // set defaults
+  setInputVal('origin','ICN','인천국제공항 (ICN)');
+  setInputVal('dest','NRT','나리타국제공항 (NRT)');
+  // 예약 버튼 이벤트 위임 — 한 번만 등록
+  document.getElementById('results').addEventListener('click', function(e){
+    var btn = e.target.closest('[data-flight-idx]');
+    if(btn && !btn.disabled) bookFlight(parseInt(btn.dataset.flightIdx));
+  });
+})();
+
+function setInputVal(id,code,label){
+  document.getElementById(id).value=label||code;
+  selectedCode[id]=code;
+}
+// ───────────────────────────────
+// COMPARE ENGINE
+// ───────────────────────────────
+function toggleCompare(idx) {
+  const info = flightStore[idx];
+  if (!info) return;
+  const existing = compareList.findIndex(c => c.idx === idx);
+  if (existing >= 0) {
+    compareList.splice(existing, 1);
+  } else {
+    if (compareList.length >= 3) {
+      alert('최대 3개까지 비교할 수 있습니다.');
+      return;
+    }
+    compareList.push({ idx, ...info });
+  }
+  updateCompareButtons();
+  updateCompareFab();
+}
+
+function updateCompareButtons() {
+  document.querySelectorAll('[data-cmp-idx]').forEach(btn => {
+    const i = parseInt(btn.dataset.cmpIdx);
+    const isAdded = compareList.some(c => c.idx === i);
+    btn.textContent = isAdded ? '✓ 비교 중' : '+ 비교';
+    btn.className = 'add-cmp-btn' + (isAdded ? ' added' : '');
+  });
+}
+
+function updateCompareFab() {
+  const fab = document.getElementById('compareFab');
+  if (!fab) return;
+  if (compareList.length >= 2) {
+    fab.style.display = 'flex';
+    fab.querySelector('.cmp-badge').textContent = compareList.length;
+  } else {
+    fab.style.display = 'none';
+  }
+}
+
+function openComparePanel() {
+  if (compareList.length < 2) return;
+  const items = compareList;
+
+  // 개성 지표: 가격, 시간, 정류
+  const prices   = items.map(c => Math.round(c.price * 1380));
+  const durs     = items.map(c => c.dur || 9999);
+  const stops_arr= items.map(c => c.stops);
+
+  const minPrice = Math.min(...prices);
+  const minDur   = Math.min(...durs);
+  const minStops = Math.min(...stops_arr);
+
+  function bestClass(vals, idx, lowerBetter=true) {
+    const best = lowerBetter ? Math.min(...vals) : Math.max(...vals);
+    const worst= lowerBetter ? Math.max(...vals) : Math.min(...vals);
+    if (vals[idx] === best && vals.filter(v=>v===best).length < vals.length) return 'cmp-best';
+    if (vals[idx] === worst && vals.filter(v=>v===worst).length < vals.length) return 'cmp-worst';
+    return '';
+  }
+
+  const colHeaders = items.map((c, i) => {
+    const ota = getOtaTrust(c.bookUrl);
+    const badge = ota ? `<span class="trust-badge trust-${ota.grade}" style="font-size:10px;padding:2px 7px;">${ota.grade}</span>` : '';
+    return `<th style="min-width:160px">
+      <div style="font-size:14px;font-weight:800;margin-bottom:4px;">${c.airline || '항공사 미확인'}</div>
+      <div style="display:flex;align-items:center;gap:5px;">${badge}</div>
+    </th>`;
+  }).join('');
+
+  function row(label, vals, renderFn, lowerBetter=true) {
+    const cells = vals.map((v, i) => {
+      const cls = bestClass(vals.map(Number), i, lowerBetter);
+      return `<td class="${cls}">${renderFn(v, i)}</td>`;
+    }).join('');
+    return `<tr><td class="row-label">${label}</td>${cells}</tr>`;
+  }
+
+  const priceRow  = row('가격', prices, (v,i) => `<span style="font-size:1rem;font-weight:800;">₩${v.toLocaleString()}</span>`);
+  const durRow    = row('소요시간', durs, (v) => v===9999?'—':`${Math.floor(v/60)}시간 ${v%60}분`);
+  const stopsRow  = row('경유', stops_arr, v => v===0?'<span style="color:#3fb950;font-weight:700">직항</span>':v===1?'1회 경유':`${v}회 경유`);
+  const timeRow   = items.map((c,i) => `<td>${c.depTime||'—'} → ${c.arrTime||'—'}</td>`).join('');
+  const realPrices= items.map(c => {
+    const f = getFeeInfo(c.bookUrl);
+    const krw = Math.round(c.price*1380);
+    const card = f ? Math.round(krw*f.booking_fee) : 0;
+    return krw + card;
+  });
+  const realRow   = row('실결제(수수료포함)', realPrices, v=>`₩${v.toLocaleString()}`);
+  const trustScores = items.map(c => { const o=getOtaTrust(c.bookUrl); return o?o.score:50; });
+  const trustRow  = row('신뢰도', trustScores, (v,i) => {
+    const o=getOtaTrust(items[i].bookUrl);
+    return o?`<span class="trust-badge trust-${o.grade}">${o.grade}등급 ${o.score}점</span>`:'—';
+  }, false);
+  const bookRow   = items.map((c,i)=>{
+    const ota=getOtaTrust(c.bookUrl);
+    const cls=ota?{A:'safe',B:'safe',C:'caution',D:'danger'}[ota.grade]:'safe';
+    return `<td><a href="${c.bookUrl}" target="_blank" class="modal-go ${cls}" style="font-size:12px;padding:7px 12px;display:inline-block;border-radius:8px;">예약 →</a></td>`;
+  }).join('');
+
+  const html = `
+  <div class="cmp-panel" id="cmpPanel" onclick="closeCmpOutside(event)">
+    <div class="cmp-box">
+      <div class="cmp-header">
+        <div class="cmp-title">📋 항공편 비교 (${items.length}개)</div>
+        <button class="cmp-close" onclick="closeComparePanel()">× 닫기</button>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="cmp-table">
+          <thead><tr><th>항목</th>${colHeaders}</tr></thead>
+          <tbody>
+            ${priceRow}
+            ${realRow}
+            <tr><td class="row-label">시간대</td>${timeRow}</tr>
+            ${durRow}
+            ${stopsRow}
+            ${trustRow}
+            <tr><td class="row-label">예약</td>${bookRow}</tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:14px;font-size:11px;color:#8b949e;">
+        🟢 최저가/최단시간 &nbsp;🔴 최고가/최장시간 &nbsp;· 실결제액은 카드 수수료 추정 포함, 수하물 제외
+      </div>
+    </div>
+  </div>`;
+  document.getElementById('modalRoot').insertAdjacentHTML('beforeend', html);
+}
+
+function closeComparePanel() {
+  const p = document.getElementById('cmpPanel');
+  if (p) p.remove();
+}
+function closeCmpOutside(e) {
+  if (e.target.id === 'cmpPanel') closeComparePanel();
+}
+
+function setMainTab(tab, btn) {
+  mainTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  if (tab === 'search') {
+    document.getElementById('searchPanel').style.display = '';
+    document.getElementById('calendarPanel').style.display = 'none';
+    document.getElementById('results').style.display = '';
+  } else {
+    document.getElementById('searchPanel').style.display = 'none';
+    document.getElementById('calendarPanel').style.display = '';
+    document.getElementById('results').style.display = 'none';
+    syncCalLabels();
+    if (!calYear) {
+      const now = new Date();
+      calYear = now.getFullYear();
+      calMonth = now.getMonth(); // 0-indexed
+    }
+    renderCalGrid();
+    loadCalendar();
+  }
+}
+
+function syncCalLabels() {
+  const o = selectedCode.origin || 'ICN';
+  const d = selectedCode.dest   || 'NRT';
+  const oApt = LOCAL_AIRPORTS.find(a => a.code === o);
+  const dApt = LOCAL_AIRPORTS.find(a => a.code === d);
+  document.getElementById('calOriginLabel').textContent = o + (oApt ? ' — ' + oApt.city : '');
+  document.getElementById('calDestLabel').textContent   = d + (dApt ? ' — ' + dApt.city : '');
+  document.getElementById('calCabinLabel').textContent  = getCabinLabel();
+}
+
+function calNav(dir) {
+  calMonth += dir;
+  if (calMonth < 0)  { calMonth = 11; calYear--; }
+  if (calMonth > 11) { calMonth = 0;  calYear++; }
+  renderCalGrid();
+  loadCalendar();
+}
+
+async function loadCalendar() {
+  if (!apiKey && !proxyBase) { alert('먼저 API Key 또는 프록시 URL을 입력하고 저장해주세요.'); return; }
+  const origin = selectedCode.origin || extractCode(document.getElementById('origin').value);
+  const dest   = selectedCode.dest   || extractCode(document.getElementById('dest').value);
+  if (!origin || !dest) { alert('출발지와 도착지를 먼저 입력해주세요.'); return; }
+
+  if (calAbort) calAbort.abort();
+  calAbort = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const signal = calAbort?.signal;
+
+  const btn = document.getElementById('calRefreshBtn');
+  btn.disabled = true; btn.textContent = '로딩 중...';
+
+  // Build list of dates in calYear/calMonth
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const today = new Date(); today.setHours(0,0,0,0);
+  const dates = [];
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dt = new Date(calYear, calMonth, d);
+    if (dt >= today) dates.push(fmt(dt));
+  }
+
+  // Clear existing data for this month
+  for (const k of Object.keys(calData)) {
+    if (k.startsWith(`${calYear}-${String(calMonth+1).padStart(2,'0')}`)) delete calData[k];
+  }
+
+  const cabin = document.getElementById('cabin').value;
+  const adults = parseInt(document.getElementById('adults').value);
+  const prog = document.getElementById('calProgress');
+
+  // Sequential fetch with small batching
+  const BATCH = 3;
+  for (let i = 0; i < dates.length; i += BATCH) {
+    if (signal?.aborted) break;
+    const batch = dates.slice(i, i + BATCH);
+    prog.textContent = `${i + 1} / ${dates.length}개 날짜 조회 중`;
+    await Promise.all(batch.map(async date => {
+      try {
+        const calEp = proxyBase
+          ? proxyBase+'/api/fares?type=one-way'
+          : 'https://ignav.com/api/fares/one-way';
+        const calHeaders = {'Content-Type':'application/json',...(apiKey?{'X-Api-Key':apiKey}:{})};
+        const r = await fetch(calEp, {
+          method: 'POST',
+          headers: calHeaders,
+          body: JSON.stringify({ origin, destination: dest, departure_date: date, adults, cabin_class: cabin }),
+          signal
+        });
+        if (!r.ok) return;
+        const data = await r.json();
+        const items = data.itineraries || data.results || data.offers || [];
+        if (items.length) {
+          const minP = Math.min(...items.map(getPrice).filter(p => p > 0));
+          if (isFinite(minP)) calData[date] = minP;
+        }
+      } catch(e) {}
+    }));
+    renderCalGrid(); // update UI incrementally
+    await new Promise(r => setTimeout(r, 120)); // small pause between batches
+  }
+
+  prog.textContent = '완료!';
+  setTimeout(() => { prog.textContent = ''; }, 2000);
+  btn.disabled = false; btn.textContent = '새로고침';
+  renderCalGrid();
+}
+
+function renderCalGrid() {
+  const lbl = document.getElementById('calMonthLabel');
+  const grid = document.getElementById('calGrid');
+  if (!calYear) return;
+
+  lbl.textContent = `${calYear}년 ${calMonth + 1}월`;
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const firstDay = new Date(calYear, calMonth, 1).getDay(); // 0=Sun
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const selDate = document.getElementById('depDate').value;
+
+  // Compute price range for color coding
+  const prices = [];
+  for (let d = 1; d <= daysInMonth; d++) {
+    const k = fmt(new Date(calYear, calMonth, d));
+    if (calData[k]) prices.push(calData[k]);
+  }
+  const pMin = prices.length ? Math.min(...prices) : 0;
+  const pMax = prices.length ? Math.max(...prices) : 0;
+  const pRange = pMax - pMin || 1;
+
+  let html = '<div class="cal-grid">';
+  const dows = ['일','월','화','수','목','금','토'];
+  dows.forEach((d,i) => {
+    const color = i===0?'color:#f85149':i===6?'color:#58a6ff':'';
+    html += `<div class="cal-dow" style="${color}">${d}</div>`;
+  });
+
+  // empty cells before first day
+  for (let i = 0; i < firstDay; i++) html += '<div class="cal-cell empty"></div>';
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dt = new Date(calYear, calMonth, d);
+    const dateStr = fmt(dt);
+    const isPast = dt < today;
+    const isToday = dt.getTime() === today.getTime();
+    const isSel = dateStr === selDate;
+    const price = calData[dateStr];
+    const dow = dt.getDay();
+    const dayColor = dow===0?'#f85149':dow===6?'#58a6ff':'#e6edf3';
+
+    let bg = '#161b22', border = '#21262d', priceEl = '<div class="cal-loading-dot"></div>';
+    if (isPast) { bg = '#0d1117'; priceEl = ''; }
+    else if (price !== undefined) {
+      const ratio = (price - pMin) / pRange;
+      if (ratio < 0.33)       { bg = '#1a3a1f'; border = '#238636'; }
+      else if (ratio < 0.67)  { bg = '#2d2000'; border = '#9e6a03'; }
+      else                    { bg = '#2d1a1a'; border = '#b91c1c'; }
+      const krw = Math.round(price * 1380);
+      const priceStr = krw >= 1000000 ? (krw/10000).toFixed(0)+'만' : (krw/10000).toFixed(1)+'만';
+      const priceColor = ratio < 0.33 ? '#3fb950' : ratio < 0.67 ? '#d29922' : '#f85149';
+      priceEl = `<div class="cal-price" style="color:${priceColor}">${priceStr}원</div>`;
+    }
+
+    const extraClass = isPast?'past':'' + (isToday?' today':'') + (isSel?' selected':'');
+    const click = isPast ? '' : `onclick="calPickDate('${dateStr}')"`;
+    html += `<div class="cal-cell ${extraClass}" style="background:${bg};border-color:${border};" ${click}>
+      <div class="cal-day" style="color:${dayColor}">${d}</div>
+      ${priceEl}
+    </div>`;
+  }
+
+  html += '</div>';
+  grid.innerHTML = html;
+}
+
+function calPickDate(dateStr) {
+  document.getElementById('depDate').value = dateStr;
+  // Switch to search tab and trigger search
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelector('.tab').classList.add('active'); // first tab = search
+  document.getElementById('searchPanel').style.display = '';
+  document.getElementById('calendarPanel').style.display = 'none';
+  document.getElementById('results').style.display = '';
+  mainTab = 'search';
+  search();
+}
+
+function fmt(d) { return d.toISOString().slice(0,10); }
+
+function setKeyStatus(ok){
+  const el=document.getElementById('keyStatus');
+  el.textContent=ok?'✅ 저장됨':'';
+  el.style.color='#3fb950';
+}
+function saveKey(){
+  const k=document.getElementById('apiKey').value.trim();
+  const p=document.getElementById('proxyUrl').value.trim().replace(/\/$/,'');
+  if(!k&&!p){alert('API Key 또는 프록시 URL을 입력해주세요.');return;}
+  if(k){apiKey=k; localStorage.setItem('fc_apikey',k);}
+  if(p){proxyBase=p; localStorage.setItem('fc_proxy',p);}
+  setKeyStatus(true);
+}
+function setTab(type,btn){
+  tripType=type;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  const rw=document.getElementById('retDateWrap');
+  const ri=document.getElementById('retDate');
+  rw.style.opacity=type==='roundtrip'?'1':'0.35';
+  ri.disabled=type!=='roundtrip';
+}
+function swapAirports(){
+  const ov=selectedCode.origin, dv=selectedCode.dest;
+  const ol=document.getElementById('origin').value, dl=document.getElementById('dest').value;
+  document.getElementById('origin').value=dl; selectedCode.origin=dv;
+  document.getElementById('dest').value=ol;   selectedCode.dest=ov;
+}
+
+// ───────────────────────────────
+// AUTOCOMPLETE
+// ───────────────────────────────
+function localSearch(q){
+  if(!q||q.length<1) return [];
+  const lq=q.toLowerCase().replace(/\s+/g,'');
+  return LOCAL_AIRPORTS.filter(a=>{
+    return a.tags.some(t=>t.replace(/\s+/g,'').includes(lq))
+      || a.code.toLowerCase().startsWith(lq)
+      || a.city.toLowerCase().includes(lq)
+      || a.name.toLowerCase().includes(lq)
+      || a.country.toLowerCase().replace(/\s+/g,'').includes(lq);
+  }).slice(0,8);
+}
+
+async function remoteSearch(q,id){
+  if((!apiKey && !proxyBase)||q.length<2) return [];
+  try{
+    let r;
+    if(proxyBase){
+      r=await fetch(`${proxyBase}/api/airports?q=${encodeURIComponent(q)}&limit=5`,
+        {headers:{...(apiKey?{'X-Api-Key':apiKey}:{})}});
+    }else{
+      r=await fetch(`https://ignav.com/api/airports?q=${encodeURIComponent(q)}&limit=5`,
+        {headers:{'X-Api-Key':apiKey}});
+    }
+    if(!r.ok) return [];
+    const data=await r.json();
+    return (data||[]).map(a=>({
+      code:a.code||a.iata,
+      name:a.name||a.airport_name,
+      city:a.city||a.city_name||'',
+      country:a.country||a.country_name||'',
+      tags:[]
+    })).filter(a=>a.code);
+  }catch{return [];}
+}
+
+function onAcInput(id){
+  clearTimeout(acTimer[id]);
+  const q=document.getElementById(id).value.trim();
+  if(!q){hideAcImmediate(id);return;}
+  // local first (instant)
+  const local=localSearch(q);
+  showAc(id,local);
+  // then remote
+  if(apiKey){
+    acTimer[id]=setTimeout(async()=>{
+      const remote=await remoteSearch(q,id);
+      // merge: remote not already in local
+      const localCodes=new Set(local.map(a=>a.code));
+      const merged=[...local,...remote.filter(a=>!localCodes.has(a.code))].slice(0,7);
+      showAc(id,merged);
+    },350);
+  }
+}
+
+function showAc(id,items){
+  acResults[id]=items;
+  acSelected[id]=-1;
+  const box=document.getElementById(id+'Ac');
+  if(!items.length){box.classList.remove('open');return;}
+  box.innerHTML=items.map((a,i)=>`
+    <div class="ac-item" onmousedown="pickAc('${id}',${i})" id="ac-${id}-${i}">
+      <span class="ac-code">${a.code} <span style="color:#8b949e;font-weight:400;font-size:.8rem;">${a.country}</span></span>
+      <span class="ac-name">${a.name}${a.city?' — '+a.city:''}</span>
+    </div>`).join('');
+  box.classList.add('open');
+}
+
+function pickAc(id,i){
+  const a=acResults[id][i];
+  document.getElementById(id).value=a.name+' ('+a.code+')';
+  selectedCode[id]=a.code;
+  hideAcImmediate(id);
+}
+
+function hideAc(id){
+  // slight delay so mousedown fires first
+  setTimeout(()=>hideAcImmediate(id),200);
+}
+function hideAcImmediate(id){
+  document.getElementById(id+'Ac').classList.remove('open');
+}
+
+function onAcKey(e,id){
+  const box=document.getElementById(id+'Ac');
+  if(!box.classList.contains('open')) return;
+  const len=acResults[id].length;
+  if(e.key==='ArrowDown'){
+    e.preventDefault();
+    acSelected[id]=Math.min(acSelected[id]+1,len-1);
+    highlightAc(id);
+  } else if(e.key==='ArrowUp'){
+    e.preventDefault();
+    acSelected[id]=Math.max(acSelected[id]-1,-1);
+    highlightAc(id);
+  } else if(e.key==='Enter'&&acSelected[id]>=0){
+    e.preventDefault();
+    pickAc(id,acSelected[id]);
+  } else if(e.key==='Escape'){
+    hideAcImmediate(id);
+  }
+}
+function highlightAc(id){
+  document.querySelectorAll(`#${id}Ac .ac-item`).forEach((el,i)=>{
+    el.classList.toggle('selected',i===acSelected[id]);
+  });
+}
+
+// ───────────────────────────────
+// SEARCH
+// ───────────────────────────────
+async function search(){
+  if(!apiKey && !proxyBase){alert('먼저 API Key 또는 프록시 URL을 입력하고 저장해주세요.');return;}
+  // resolve codes
+  const origin=selectedCode.origin||extractCode(document.getElementById('origin').value);
+  const dest=selectedCode.dest||extractCode(document.getElementById('dest').value);
+  const depDate=document.getElementById('depDate').value;
+  const retDate=document.getElementById('retDate').value;
+  const adults=parseInt(document.getElementById('adults').value);
+  const cabin=document.getElementById('cabin').value;
+
+  if(!origin||!dest||!depDate){alert('출발지, 도착지, 출발일을 입력해주세요.');return;}
+  if(tripType==='roundtrip'&&!retDate){alert('귀국일을 선택해주세요.');return;}
+
+  const btn=document.getElementById('searchBtn');
+  btn.disabled=true; btn.textContent='검색 중...';
+  document.getElementById('results').innerHTML=`<div class="loading"><div class="spinner"></div>실시간 항공편을 검색하고 있습니다...</div>`;
+
+  try{
+    // 프록시 우선 사용 (CORS 우회), 없으면 Ignav 직접 호출
+    let ep, fetchOpts;
+    if(proxyBase){
+      ep=proxyBase+'/api/fares?type='+(tripType==='roundtrip'?'round-trip':'one-way');
+      fetchOpts={
+        method:'POST',
+        headers:{'Content-Type':'application/json',...(apiKey?{'X-Api-Key':apiKey}:{})},
+        body:JSON.stringify({origin,destination:dest,departure_date:depDate,adults,cabin_class:cabin,...(tripType==='roundtrip'?{return_date:retDate}:{})})
+      };
+    }else{
+      ep=tripType==='roundtrip'?'https://ignav.com/api/fares/round-trip':'https://ignav.com/api/fares/one-way';
+      fetchOpts={
+        method:'POST',
+        headers:{'X-Api-Key':apiKey,'Content-Type':'application/json'},
+        body:JSON.stringify({origin,destination:dest,departure_date:depDate,adults,cabin_class:cabin,...(tripType==='roundtrip'?{return_date:retDate}:{})})
+      };
+    }
+    const body={origin,destination:dest,departure_date:depDate,adults,cabin_class:cabin};
+    if(tripType==='roundtrip') body.return_date=retDate;
+
+    let res;
+    try{
+      res=await fetch(ep,fetchOpts);
+    }catch(netErr){
+      const msg=netErr.message||'';
+      const isCors=msg.toLowerCase().includes('fetch')||msg.toLowerCase().includes('cors')||msg.toLowerCase().includes('network');
+      setResultHtml(corsHelpHtml(isCors,netErr.message));
+      btn.disabled=false; btn.textContent='🔍 항공편 검색';
+      return;
+    }
+    if(res.status===401||res.status===403){
+      setResultHtml(`<div class="error-box">🔑 <b>API Key 오류 (${res.status})</b><br><span style="color:#ccc">API Key가 올바르지 않거나 만료됐습니다. Ignav 대시보드에서 키를 확인해주세요.</span></div>`);
+      btn.disabled=false; btn.textContent='🔍 항공편 검색';
+      return;
+    }
+    if(!res.ok){
+      const err=await res.json().catch(()=>({}));
+      throw new Error(err.message||`서버 오류 ${res.status}`);
+    }
+    const data=await res.json();
+    renderResults(data,origin,dest,depDate,retDate);
+  }catch(e){
+    setResultHtml(`<div class="error-box">⚠️ <b>검색 오류</b><br><span style="color:#ccc">${e.message}</span></div>`);
+  }finally{
+    btn.disabled=false; btn.textContent='🔍 항공편 검색';
+  }
+}
+
+// ───────────────────────────────
+// OTA TRUST DATABASE
+// 한국소비자원 피해구제 신청 데이터 기반 (2022~2025)
+// ───────────────────────────────
+const OTA_TRUST = {
+  // ─ D등급: 위험 (소비자원 다수 민원)
+  'agoda':     {name:'아고다',    grade:'D', score:38, complaints:2190, refund:'매우 어려움', cs:'24시간 불가', warning:'4년간 소비자원 민원 1위(2,190건). 환불 거부 사례 다수.',   goods:['최저가 많음'],                        bads:['환불 거부 잦음','한국어 CS 부실','숨겨진 수수료']},
+  'trip.com':  {name:'트립닷컴',  grade:'D', score:41, complaints:1266, refund:'어려움',     cs:'제한적',      warning:'민원 2위(1,266건). 중국계 OTA로 국내 법규 적용 미흡.',   goods:['가격 경쟁력'],                         bads:['환불 처리 느림','취소 수수료 높음','한국어 CS 부실']},
+  'ctrip':     {name:'씨트립',    grade:'D', score:40, complaints:1100, refund:'어려움',     cs:'제한적',      warning:'트립닷컴의 모회사. 동일 시스템으로 유사 민원 발생.',       goods:['아시아 노선 강점'],                   bads:['환불 거부 사례','CS 연결 어려움']},
+  'kiwi':      {name:'키위닷컴',  grade:'D', score:35, complaints:800,  refund:'매우 어려움', cs:'이메일만',    warning:'LCC 직항 미계약 판매로 항공사 환불 대리 불가 사례 多.',   goods:['저가 환승권 특화'],                   bads:['항공사 미계약 판매','환불 사실상 불가','CS 이메일만']},
+  'gotogate':  {name:'고투게이트',grade:'D', score:37, complaints:700,  refund:'매우 어려움', cs:'제한적',      warning:'진에어·에어부산 미계약 판매로 항공사 직접 환불 불가.',     goods:['가격 저렴'],                           bads:['미계약 판매 多','환불 거부','CS 불량']},
+  // ─ C등급: 주의 (민원 있으나 대응 가능)
+  'expedia':   {name:'익스피디아', grade:'C', score:62, complaints:93,  refund:'가능(시일 걸림)', cs:'24시간',   warning:'93건으로 상위 OTA 대비 적으나 취소 수수료 별도 주의.',     goods:['24시간 CS','패키지 강점'],            bads:['취소 수수료 별도','환불 처리 느림']},
+  'booking':   {name:'부킹닷컴',  grade:'C', score:65, complaints:258, refund:'가능',         cs:'24시간',   warning:'숙박 위주 플랫폼. 항공 환불 정책 복잡.',                   goods:['24시간 CS','숙박+항공 연동'],          bads:['항공 환불 복잡','수수료 불투명']},
+  'hotels.com':{name:'호텔스닷컴', grade:'C', score:60, complaints:154, refund:'가능',        cs:'제한적',   warning:'익스피디아 계열. 항공보다 숙박 특화.',                       goods:['숙박 전문','포인트 적립'],             bads:['항공 CS 부실','수수료 별도']},
+  // ─ B등급: 양호
+  'kayak':     {name:'카약',      grade:'B', score:74, complaints:20,  refund:'항공사 정책',  cs:'제한적',   warning:null,  goods:['메타서치(직접 판매 아님)','비교에 최적'], bads:['직접 CS 없음','예약은 외부']},
+  'google':    {name:'구글 항공', grade:'B', score:76, complaints:5,   refund:'항공사 정책',  cs:'없음',     warning:null,  goods:['메타서치','수수료 없음','가격 투명'],     bads:['직접 예약 불가','CS 없음']},
+  // ─ A등급: 신뢰 (항공사 직접 또는 공인 OTA)
+  'koreanair': {name:'대한항공',   grade:'A', score:92, complaints:0,   refund:'명확',         cs:'24시간 한국어', warning:null, goods:['직접 발권','명확한 환불','마일리지','한국어 CS 24시간'], bads:['가격 비쌈']},
+  'asiana':    {name:'아시아나항공',grade:'A',score:90, complaints:0,   refund:'명확',         cs:'24시간 한국어', warning:null, goods:['직접 발권','명확한 환불','마일리지','한국어 CS 24시간'], bads:['가격 비쌈']},
+  'jejuair':   {name:'제주항공',   grade:'A', score:88, complaints:0,   refund:'명확',         cs:'한국어',    warning:null, goods:['직접 발권','한국어 CS','명확한 환불'], bads:['LCC 환불 수수료 있음']},
+  'jinair':    {name:'진에어',     grade:'A', score:87, complaints:0,   refund:'명확',         cs:'한국어',    warning:null, goods:['직접 발권','한국어 CS','명확한 환불'], bads:['LCC 환불 수수료 있음']},
+  'twayair':   {name:'티웨이항공', grade:'A', score:86, complaints:0,   refund:'명확',         cs:'한국어',    warning:null, goods:['직접 발권','한국어 CS'],              bads:['노선 제한']},
+  'airbusan':  {name:'에어부산',   grade:'A', score:85, complaints:0,   refund:'명확',         cs:'한국어',    warning:null, goods:['직접 발권','한국어 CS'],              bads:['노선 제한']},
+};
+
+// ───────────────────────────────
+// HIDDEN FEE ENGINE
+// OTA별 추가 수수료 패턴 데이터베이스
+// ───────────────────────────────
+const FEE_DB = {
+  // 카드 수수료 (신용카드 결제 시)
+  'agoda':    { booking_fee:0.02, baggage:'별도',   seat:'별도',   card_ok:true,  card_note:'신용카드 1.5~2% 추가' },
+  'trip.com': { booking_fee:0.03, baggage:'별도',   seat:'별도',   card_ok:true,  card_note:'신용카드 최대 3% 추가' },
+  'ctrip':    { booking_fee:0.03, baggage:'별도',   seat:'별도',   card_ok:true,  card_note:'신용카드 최대 3% 추가' },
+  'kiwi':     { booking_fee:0.049,baggage:'별도',   seat:'별도',   card_ok:false, card_note:'카드 수수료 최대 4.9%' },
+  'gotogate': { booking_fee:0.03, baggage:'별도',   seat:'별도',   card_ok:false, card_note:'카드 수수료 2~3%' },
+  'expedia':  { booking_fee:0,    baggage:'포함',   seat:'일부',   card_ok:true,  card_note:null },
+  'booking':  { booking_fee:0,    baggage:'별도',   seat:'별도',   card_ok:true,  card_note:null },
+  'hotels.com':{ booking_fee:0,   baggage:'별도',   seat:'별도',   card_ok:true,  card_note:null },
+  'kayak':    { booking_fee:0,    baggage:'항공사', seat:'항공사', card_ok:true,  card_note:null },
+  'google':   { booking_fee:0,    baggage:'항공사', seat:'항공사', card_ok:true,  card_note:null },
+  'koreanair':{ booking_fee:0,    baggage:'포함',   seat:'무료',   card_ok:true,  card_note:null },
+  'asiana':   { booking_fee:0,    baggage:'포함',   seat:'무료',   card_ok:true,  card_note:null },
+  'jejuair':  { booking_fee:0,    baggage:'별도',   seat:'유료',   card_ok:true,  card_note:null },
+  'jinair':   { booking_fee:0,    baggage:'별도',   seat:'유료',   card_ok:true,  card_note:null },
+  'twayair':  { booking_fee:0,    baggage:'별도',   seat:'유료',   card_ok:true,  card_note:null },
+  'airbusan': { booking_fee:0,    baggage:'별도',   seat:'유료',   card_ok:true,  card_note:null },
+};
+
+function getFeeInfo(bookUrl) {
+  if (!bookUrl || bookUrl === '#') return null;
+  const lc = bookUrl.toLowerCase();
+  for (const key of Object.keys(FEE_DB)) {
+    if (lc.includes(key)) return { key, ...FEE_DB[key] };
+  }
+  return null;
+}
+
+function feeHtml(price, bookUrl, airline) {
+  const fee = getFeeInfo(bookUrl);
+  const krw = Math.round(price * 1380);
+
+  // LCC baggage estimate (domestic LCC or short-haul intl)
+  const lccAirlines = ['제주항공','진에어','티웨이','에어부산','에어서울','에어로케이'];
+  const isLcc = lccAirlines.some(l => (airline||'').includes(l));
+  const baggageEst = isLcc ? 35000 : 0;
+  const seatEst    = (fee && fee.seat === '유료') || (fee && fee.seat === '별도') ? 15000 : 0;
+  const cardFeeAmt = fee ? Math.round(krw * fee.booking_fee) : 0;
+  const totalExtra = baggageEst + seatEst + cardFeeAmt;
+  const totalReal  = krw + totalExtra;
+
+  if (!fee) return '';
+
+  const rows = [];
+
+  // 항공권 기본가
+  rows.push(`<div class="fee-row">
+    <span class="fee-name">✈ 항공권 기본가 <span class="fi">표시가격</span></span>
+    <span class="fee-amt included">₩${krw.toLocaleString()}</span>
+  </div>`);
+
+  // 카드 수수료
+  if (fee.booking_fee > 0) {
+    rows.push(`<div class="fee-row">
+      <span class="fee-name">💳 카드 결제 수수료 <span class="fi" style="border-color:#b91c1c;color:#f85149">추가</span></span>
+      <span class="fee-amt extra">+₩${cardFeeAmt.toLocaleString()} <span style="font-size:9px;color:#8b949e">(${(fee.booking_fee*100).toFixed(1)}%)</span></span>
+    </div>`);
+  } else {
+    rows.push(`<div class="fee-row">
+      <span class="fee-name">💳 카드 수수료</span>
+      <span class="fee-amt included">없음</span>
+    </div>`);
+  }
+
+  // 수하물
+  const baggageClass = fee.baggage==='포함'?'included':fee.baggage==='별도'||fee.baggage==='항공사'?'maybe':'extra';
+  const baggageLabel = fee.baggage==='포함'?'포함':fee.baggage==='별도'?`별도 (${baggageEst>0?'약 ₩'+baggageEst.toLocaleString():'비용 발생'})`:fee.baggage==='항공사'?'항공사 정책':'별도';
+  rows.push(`<div class="fee-row">
+    <span class="fee-name">🧳 수하물 위탁 (15kg) <span class="fi" style="${fee.baggage!=='포함'?'border-color:#9e6a03;color:#d29922':''}">확인필요</span></span>
+    <span class="fee-amt ${baggageClass}">${baggageLabel}</span>
+  </div>`);
+
+  // 좌석 선택
+  const seatClass = fee.seat==='무료'||fee.seat==='포함'?'included':fee.seat==='유료'||fee.seat==='별도'?'maybe':'maybe';
+  const seatLabel = fee.seat==='무료'?'무료':fee.seat==='유료'?`유료 (약 ₩${seatEst.toLocaleString()})`:fee.seat==='항공사'?'항공사 정책':fee.seat;
+  rows.push(`<div class="fee-row">
+    <span class="fee-name">💺 좌석 선택</span>
+    <span class="fee-amt ${seatClass}">${seatLabel}</span>
+  </div>`);
+
+  // 취소 환불
+  const ota = getOtaTrust(bookUrl);
+  const refundClass = ota ? {A:'included',B:'included',C:'maybe',D:'extra'}[ota.grade] : 'maybe';
+  const refundLabel = ota ? ota.refund : '확인 필요';
+  rows.push(`<div class="fee-row">
+    <span class="fee-name">↩ 취소/환불</span>
+    <span class="fee-amt ${refundClass}">${refundLabel}</span>
+  </div>`);
+
+  const totalClass = totalExtra === 0 ? 'ok' : totalExtra < 50000 ? 'warn' : 'danger';
+  const extraNote  = totalExtra > 0 ? `(+₩${totalExtra.toLocaleString()} 예상)` : '(추가 비용 없음)';
+
+  return `
+  <div class="fee-wrap">
+    <div class="fee-title">💰 실제 비용 분석 <span style="font-size:10px;color:#8b949e;font-weight:400;">(추정치 · 실제와 다를 수 있음)</span></div>
+    ${rows.join('')}
+    <div class="fee-total-row">
+      <span class="fee-total-label">예상 실결제액 ${extraNote}</span>
+      <span class="fee-total-amt ${totalClass}">₩${totalReal.toLocaleString()}</span>
+    </div>
+  </div>`;
+}
+
+function getOtaTrust(bookingUrl) {
+  if (!bookingUrl || bookingUrl === '#') return null;
+  try {
+    const host = new URL(bookingUrl).hostname.toLowerCase();
+    for (const [key, data] of Object.entries(OTA_TRUST)) {
+      if (host.includes(key)) return data;
+    }
+  } catch(e){}
+  // airline direct check
+  const lc = (bookingUrl||'').toLowerCase();
+  if (lc.includes('koreanair')) return OTA_TRUST['koreanair'];
+  if (lc.includes('flyasiana')||lc.includes('asiana')) return OTA_TRUST['asiana'];
+  if (lc.includes('jejuair')) return OTA_TRUST['jejuair'];
+  if (lc.includes('jinair')) return OTA_TRUST['jinair'];
+  if (lc.includes('twayair')) return OTA_TRUST['twayair'];
+  if (lc.includes('airbusan')) return OTA_TRUST['airbusan'];
+  if (lc.includes('trip.com')||lc.includes('ctrip')) return OTA_TRUST['trip.com'];
+  if (lc.includes('agoda')) return OTA_TRUST['agoda'];
+  if (lc.includes('kiwi')) return OTA_TRUST['kiwi'];
+  if (lc.includes('gotogate')) return OTA_TRUST['gotogate'];
+  if (lc.includes('expedia')) return OTA_TRUST['expedia'];
+  if (lc.includes('booking')) return OTA_TRUST['booking'];
+  if (lc.includes('kayak')) return OTA_TRUST['kayak'];
+  if (lc.includes('google')) return OTA_TRUST['google'];
+  return null;
+}
+
+function trustHtml(ota) {
+  if (!ota) return '';
+  const barColor = {A:'#3fb950',B:'#58a6ff',C:'#d29922',D:'#f85149'}[ota.grade];
+  const goodTags = ota.goods.map(g=>`<span class="trust-item good">✓ ${g}</span>`).join('');
+  const badTags  = ota.bads.map(b=>`<span class="trust-item bad">✗ ${b}</span>`).join('');
+  const warn = ota.warning ? `<div class="trust-warning">⚠ ${ota.warning}</div>` : '';
+  const complaint = ota.complaints > 0 ? ` · 소비자원 민원 ${ota.complaints.toLocaleString()}건` : ' · 직접 발권';
+  return `
+  <div class="trust-wrap">
+    <div class="trust-row">
+      <span class="trust-label">🛡 예약처 신뢰도 — ${ota.name}${complaint}</span>
+      <div class="trust-score-row">
+        <div class="trust-bar-bg"><div class="trust-bar" style="width:${ota.score}%;background:${barColor}"></div></div>
+        <span class="trust-badge trust-${ota.grade}">${ota.grade}등급 ${ota.score}점</span>
+      </div>
+    </div>
+    <div class="trust-items">${goodTags}${badTags}</div>
+    ${warn}
+  </div>`;
+}
+
+// ───────────────────────────────
+// BOOKING MODAL
+// ───────────────────────────────
+function openBookModal(info) {
+  const ota = getOtaTrust(info.bookUrl);
+  const gradeColor = ota ? {A:'#3fb950',B:'#58a6ff',C:'#d29922',D:'#f85149'}[ota.grade] : '#8b949e';
+  const gradeBg    = ota ? {A:'#1a3a1f',B:'#1a2d3a',C:'#2d2000',D:'#2d1a1a'}[ota.grade] : '#161b22';
+  const gradeBorder= ota ? {A:'#238636',B:'#1f6feb',C:'#9e6a03',D:'#b91c1c'}[ota.grade] : '#30363d';
+  const goClass    = ota ? {A:'safe',B:'safe',C:'caution',D:'danger'}[ota.grade] : 'safe';
+  const durStr = info.dur ? `${Math.floor(info.dur/60)}시간 ${info.dur%60}분` : '';
+  const stopLabel = info.stops===0?'직항':info.stops===1?'1회 경유':`${info.stops}회 경유`;
+  const krw = Math.round(info.price*1380);
+
+  let otaSection = '';
+  if (!ota) {
+    otaSection = `<div class="modal-no-ota">예약 사이트 정보를 확인할 수 없습니다.<br><small>외부 사이트로 이동합니다.</small></div>`;
+  } else {
+    const warn = ota.warning ? `<div class="modal-warn-box ${ota.grade==='D'?'danger':''}">
+      ${ota.grade==='D'?'🚨':'⚠'} ${ota.warning}
+    </div>` : '';
+    const goodTags = ota.goods.map(g=>`<span class="modal-tag good">✓ ${g}</span>`).join('');
+    const badTags  = ota.bads.map(b=>`<span class="modal-tag bad">✗ ${b}</span>`).join('');
+    const complaint = ota.complaints > 0
+      ? `소비자원 피해 신청 <b>${ota.complaints.toLocaleString()}건</b> (2022~2025)` : '항공사 직접 발권 · 소비자원 민원 없음';
+    otaSection = `
+    <div class="modal-trust">
+      <div class="modal-trust-header">🛡 예약처 신뢰도</div>
+      <div class="modal-trust-body">
+        <div class="modal-grade-row">
+          <span class="modal-grade-badge" style="background:${gradeBg};color:${gradeColor};border:1.5px solid ${gradeBorder}">${ota.grade}</span>
+          <div>
+            <div class="modal-ota-name">${ota.name}</div>
+            <div class="modal-ota-sub">${complaint}</div>
+          </div>
+        </div>
+        ${warn}
+        <div class="modal-tags">${goodTags}${badTags}</div>
+      </div>
+    </div>`;
+  }
+
+  const dangerNote = ota?.grade==='D'
+    ? `<div style="font-size:11px;color:#f85149;text-align:center;margin-top:10px;">⚠ 위 사이트는 소비자 피해 위험이 높습니다. 충분히 검토 후 이용하세요.</div>` : '';
+
+  const html = `
+  <div class="modal-overlay" id="bookModal" onclick="closeModalOutside(event)">
+    <div class="modal-box">
+      <div class="modal-title">✈ 예약 정보 확인</div>
+      <div class="modal-flight-info">
+        <div class="modal-flight-row">
+          <span class="mfr-label">구간</span>
+          <span class="mfr-val">${info.origin} → ${info.dest} (${stopLabel})</span>
+        </div>
+        <div class="modal-flight-row">
+          <span class="mfr-label">시간</span>
+          <span class="mfr-val">${info.depTime} → ${info.arrTime}${durStr?' ('+durStr+')':''}</span>
+        </div>
+        <div class="modal-flight-row">
+          <span class="mfr-label">항공사</span>
+          <span class="mfr-val">${info.airline||'—'}</span>
+        </div>
+        <div class="modal-flight-row" style="margin-top:8px;padding-top:8px;border-top:1px solid #21262d;">
+          <span class="mfr-label">총 금액</span>
+          <span class="mfr-price">₩${krw.toLocaleString()}</span>
+        </div>
+      </div>
+      ${otaSection}
+      <div class="modal-actions">
+        <button class="modal-cancel" onclick="closeModal()">← 돌아가기</button>
+        <a href="${info.bookUrl}" target="_blank" class="modal-go ${goClass}" onclick="closeModal()">
+          ${ota?.grade==='D'?'위험 감수하고 예약하기':'예약 사이트로 이동 →'}
+        </a>
+      </div>
+      ${dangerNote}
+    </div>
+  </div>`;
+
+  document.getElementById('modalRoot').innerHTML = html;
+}
+
+function closeModal() {
+  document.getElementById('modalRoot').innerHTML = '';
+}
+function closeModalOutside(e) {
+  if (e.target.id === 'bookModal') closeModal();
+}
+
+function setResultHtml(inner){
+  document.getElementById('results').innerHTML=`<div style="max-width:720px;margin:0 auto;padding:0 16px;">${inner}</div>`;
+}
+function corsHelpHtml(isCors,msg){
+  if(!isCors) return `<div class="error-box">⚠️ 네트워크 오류: ${msg}</div>`;
+  return `<div class="error-box">
+    ⚠️ <b>CORS 오류 — 브라우저 보안 정책으로 직접 API 호출이 차단됐습니다.</b><br>
+    <div style="margin-top:12px;padding:12px;background:#0d1117;border-radius:8px;font-size:.82rem;line-height:1.9;color:#8b949e;">
+      <b style="color:#e6edf3;">① 가장 쉬운 방법: HTML 파일로 저장 후 열기</b><br>
+      이 페이지를 <code style="color:#58a6ff;">flightcore.html</code>로 저장 → 더블클릭으로 열면 CORS 없이 작동합니다.<br><br>
+      <b style="color:#e6edf3;">② 개발용 Chrome으로 테스트</b><br>
+      터미널: <code style="color:#58a6ff;">open -na "Google Chrome" --args --disable-web-security --user-data-dir=/tmp/fc</code><br>
+      그 창에서 이 주소를 열어 테스트하세요.
+    </div>
+  </div>`;
+}
+function extractCode(val){
+  // Try IATA code in parens like "나리타국제공항 (NRT)"
+  const m=val.match(/\(([A-Z]{3})\)/);
+  if(m) return m[1];
+  // 3-letter uppercase direct
+  if(/^[A-Z]{3}$/.test(val.trim())) return val.trim();
+  return '';
+}
+
+// ───────────────────────────────
+// FLIGHT DATA STORE — 맨 위에 선언
+// ───────────────────────────────
+var flightStore = [];
+
+function bookFlight(idx) {
+  var info = flightStore[idx];
+  if (info) openBookModal(info);
+}
+
+// ───────────────────────────────
+// RENDER
+// ───────────────────────────────
+function renderResults(data,origin,dest,depDate,retDate){
+  const itineraries=data.itineraries||data.results||data.offers||[];
+  if(!itineraries.length){
+    document.getElementById('results').innerHTML=`<div class="empty">해당 구간·날짜에 운항 정보가 없습니다.<br><small style="color:#8b949e;">다른 날짜나 구간을 시도해보세요.</small></div>`;
+    return;
+  }
+  const sorted=[...itineraries].sort((a,b)=>getPrice(a)-getPrice(b));
+  const cheapest=sorted[0];
+  const fastest=[...itineraries].sort((a,b)=>getDuration(a)-getDuration(b))[0];
+
+  let html=`<div class="result-header"><strong>${origin} → ${dest}</strong> · ${depDate}${retDate?' ~ '+retDate:''} · ${sorted.length}개 결과</div>`;
+
+  flightStore = []; // reset
+  sorted.forEach(item=>{
+    const price=getPrice(item);
+    const dur=getDuration(item);
+    const stops=getStops(item);
+    const airline=getAirline(item);
+    const depTime=getDepTime(item);
+    const arrTime=getArrTime(item);
+    const isCheapest=item===cheapest;
+    const isFastest=item===fastest&&item!==cheapest;
+    const bookUrl=item.booking_url||item.booking_link||'#';
+    const stopLabel=stops===0?'직항':stops===1?'1회 경유':`${stops}회 경유`;
+    const stopClass=stops===0?'direct':stops===1?'one':'multi';
+    const durStr=dur?`${Math.floor(dur/60)}시간 ${dur%60}분`:'';
+    const idx=flightStore.length;
+    flightStore.push({price,depTime,arrTime,airline,origin,dest,stops,dur,bookUrl});
+
+    html+=`
+    <div class="flight-card">
+      <div class="fc-top">
+        <div class="fc-route">
+          <div class="fc-airport"><div class="fc-time">${depTime}</div><div class="fc-code">${origin}</div></div>
+          <div class="fc-line">
+            <div class="fc-dur">${durStr}</div>
+            <div class="fc-line-bar"></div>
+            <div class="fc-stops ${stopClass}">${stopLabel}</div>
+          </div>
+          <div class="fc-airport"><div class="fc-time">${arrTime}</div><div class="fc-code">${dest}</div></div>
+        </div>
+        <div class="fc-price-block">
+          <div class="fc-price">${fmtPrice(price)}</div>
+          <div class="fc-per">1인 기준</div>
+          <div class="fc-airline">${airline}</div>
+        </div>
+      </div>
+      <div class="fc-bottom">
+        <div class="fc-tags">
+          ${isCheapest?'<span class="fc-tag cheapest">💚 최저가</span>':''}
+          ${isFastest?'<span class="fc-tag fastest">⚡ 최단시간</span>':''}
+          <span class="fc-tag">${getCabinLabel()}</span>
+        </div>
+        <div style="display:flex;gap:7px;align-items:center;">
+      <button class="add-cmp-btn" data-cmp-idx="${idx}" onclick="toggleCompare(${idx})">+ 비교</button>
+      <button class="book-btn" data-flight-idx="${idx}" ${bookUrl==='#'?'disabled':''}>예약하기 →</button>
+    </div>
+      </div>
+      ${trustHtml(getOtaTrust(bookUrl))}
+      ${feeHtml(price, bookUrl, airline)}
+    </div>`;
+  });
+  document.getElementById('results').innerHTML=html;
+  // FAB 초기화
+  compareList = [];
+  updateCompareFab();
+}
+
+// ───────────────────────────────
+// HELPERS — Ignav response format
+// ───────────────────────────────
+function getOutbound(item){ return item.outbound||item.legs?.[0]||item.itinerary?.legs?.[0]||item; }
+function getSegments(item){ const ob=getOutbound(item); return ob.segments||ob.flights||[]; }
+
+function getPrice(item){
+  if(item.price?.amount) return parseFloat(item.price.amount);
+  if(item.price?.total)  return parseFloat(item.price.total);
+  if(item.total_price)   return parseFloat(item.total_price);
+  if(typeof item.price==='number') return item.price;
+  return 0;
+}
+function getDuration(item){
+  const ob=getOutbound(item);
+  if(ob.duration_minutes) return ob.duration_minutes;
+  if(item.duration_minutes) return item.duration_minutes;
+  return 0;
+}
+function getStops(item){
+  const segs=getSegments(item);
+  if(segs.length) return segs.length-1;
+  if(item.stops!==undefined) return item.stops;
+  return 0;
+}
+function getAirline(item){
+  const ob=getOutbound(item);
+  if(ob.carrier) return ob.carrier;
+  const segs=getSegments(item);
+  if(segs.length) return segs[0].operating_carrier_name||segs[0].carrier_name||segs[0].marketing_carrier_code||'';
+  return item.carrier_name||item.airline||'';
+}
+function getDepTime(item){
+  const segs=getSegments(item);
+  if(segs.length){
+    const t=segs[0].departure_time_local||segs[0].departure_time||segs[0].departure||'';
+    if(t) return t.slice(11,16)||t.slice(0,5);
+  }
+  const ob=getOutbound(item);
+  const t=ob.departure_time||ob.departure||'';
+  if(t) return t.slice(11,16)||t.slice(0,5);
+  return '--:--';
+}
+function getArrTime(item){
+  const segs=getSegments(item);
+  if(segs.length){
+    const last=segs[segs.length-1];
+    const t=last.arrival_time_local||last.arrival_time||last.arrival||'';
+    if(t) return t.slice(11,16)||t.slice(0,5);
+  }
+  const ob=getOutbound(item);
+  const t=ob.arrival_time||ob.arrival||'';
+  if(t) return t.slice(11,16)||t.slice(0,5);
+  return '--:--';
+}
+function fmtPrice(p){
+  if(!p) return '—';
+  const krw=Math.round(p*1380);
+  return '₩'+krw.toLocaleString();
+}
+function getCabinLabel(){
+  return {economy:'이코노미',premium_economy:'프리미엄 이코노미',business:'비즈니스',first:'퍼스트'}[document.getElementById('cabin').value]||'이코노미';
+}
+</script>
+</body>
+</html>

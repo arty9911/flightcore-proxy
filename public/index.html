@@ -184,7 +184,7 @@ header{padding:20px 24px;border-bottom:1px solid #21262d;display:flex;align-item
 .modal-go.danger{background:linear-gradient(135deg,#b91c1c,#f85149);}
 .modal-no-ota{text-align:center;padding:16px;color:#8b949e;font-size:13px;}
 .modal-offers{margin-bottom:16px;}
-.modal-offer-row{display:flex;align-items:center;gap:8px;padding:12px 14px;border-radius:10px;margin-bottom:6px;text-decoration:none;font-weight:700;font-size:14px;color:#fff;cursor:pointer;flex:unset;}
+.modal-offer-row{display:flex;align-items:center;gap:8px;padding:12px 14px;border-radius:10px;margin-bottom:6px;text-decoration:none;font-weight:700;font-size:14px;color:#fff;cursor:pointer;flex:unset;width:100%;box-sizing:border-box;text-align:left;}
 .modal-offer-name{flex:1;font-size:13px;}
 .modal-offer-price{font-size:14px;font-weight:800;white-space:nowrap;}
 .modal-offer-arrow{font-size:14px;opacity:.8;}
@@ -327,65 +327,197 @@ header{padding:20px 24px;border-bottom:1px solid #21262d;display:flex;align-item
 // POPULAR AIRPORTS (Korean-first)
 // ───────────────────────────────
 const LOCAL_AIRPORTS = [
-  {code:'ICN',name:'인천국제공항',city:'인천 / 서울',country:'한국',tags:['인천','서울','icn','incheon','seoul']},
-  {code:'GMP',name:'김포국제공항',city:'서울',country:'한국',tags:['김포','서울','gmp','gimpo','seoul']},
-  {code:'PUS',name:'김해국제공항',city:'부산',country:'한국',tags:['부산','김해','pus','busan']},
-  {code:'CJU',name:'제주국제공항',city:'제주',country:'한국',tags:['제주','cju','jeju']},
-  {code:'TAE',name:'대구국제공항',city:'대구',country:'한국',tags:['대구','tae','daegu']},
-  {code:'CJJ',name:'청주국제공항',city:'청주',country:'한국',tags:['청주','cjj','cheongju']},
-  {code:'NRT',name:'나리타국제공항',city:'도쿄',country:'일본',tags:['나리타','도쿄','nrt','narita','tokyo']},
-  {code:'HND',name:'하네다공항',city:'도쿄',country:'일본',tags:['하네다','도쿄','hnd','haneda','tokyo']},
-  {code:'KIX',name:'간사이국제공항',city:'오사카',country:'일본',tags:['오사카','간사이','kix','osaka','kansai']},
-  {code:'FUK',name:'후쿠오카공항',city:'후쿠오카',country:'일본',tags:['후쿠오카','fuk','fukuoka']},
-  {code:'CTS',name:'신치토세공항',city:'삿포로',country:'일본',tags:['삿포로','신치토세','cts','sapporo']},
-  {code:'OKA',name:'나하공항',city:'오키나와',country:'일본',tags:['오키나와','나하','oka','okinawa','naha']},
-  {code:'NGO',name:'주부국제공항',city:'나고야',country:'일본',tags:['나고야','주부','ngo','nagoya']},
+  // ── 한국
+  {code:'ICN',name:'인천국제공항',city:'인천/서울',country:'한국',tags:['인천','서울','한국','icn','incheon','seoul','korea']},
+  {code:'GMP',name:'김포국제공항',city:'서울',country:'한국',tags:['김포','서울','한국','gmp','gimpo','seoul','korea']},
+  {code:'PUS',name:'김해국제공항',city:'부산',country:'한국',tags:['부산','김해','한국','pus','busan','korea']},
+  {code:'CJU',name:'제주국제공항',city:'제주',country:'한국',tags:['제주','한국','cju','jeju','korea']},
+  {code:'TAE',name:'대구국제공항',city:'대구',country:'한국',tags:['대구','한국','tae','daegu','korea']},
+  {code:'CJJ',name:'청주국제공항',city:'청주',country:'한국',tags:['청주','한국','cjj','cheongju','korea']},
+  {code:'RSU',name:'여수공항',city:'여수',country:'한국',tags:['여수','한국','rsu','yeosu','korea']},
+  {code:'USN',name:'울산공항',city:'울산',country:'한국',tags:['울산','한국','usn','ulsan','korea']},
+  {code:'KWJ',name:'광주공항',city:'광주',country:'한국',tags:['광주','한국','kwj','gwangju','korea']},
+  {code:'WJU',name:'원주공항',city:'원주',country:'한국',tags:['원주','한국','wju','wonju','korea']},
+  {code:'HIN',name:'사천공항',city:'사천',country:'한국',tags:['사천','한국','hin','sacheon','korea']},
+  {code:'KPO',name:'포항공항',city:'포항',country:'한국',tags:['포항','한국','kpo','pohang','korea']},
+  // ── 일본
+  {code:'NRT',name:'나리타국제공항',city:'도쿄',country:'일본',tags:['나리타','도쿄','일본','nrt','narita','tokyo','japan']},
+  {code:'HND',name:'하네다공항',city:'도쿄',country:'일본',tags:['하네다','도쿄','일본','hnd','haneda','tokyo','japan']},
+  {code:'KIX',name:'간사이국제공항',city:'오사카',country:'일본',tags:['오사카','간사이','일본','kix','osaka','kansai','japan']},
+  {code:'ITM',name:'이타미공항',city:'오사카',country:'일본',tags:['오사카','이타미','일본','itm','osaka','itami','japan']},
+  {code:'FUK',name:'후쿠오카공항',city:'후쿠오카',country:'일본',tags:['후쿠오카','일본','fuk','fukuoka','japan']},
+  {code:'CTS',name:'신치토세공항',city:'삿포로',country:'일본',tags:['삿포로','신치토세','일본','cts','sapporo','chitose','japan']},
+  {code:'OKA',name:'나하공항',city:'오키나와',country:'일본',tags:['오키나와','나하','일본','oka','okinawa','naha','japan']},
+  {code:'NGO',name:'주부국제공항',city:'나고야',country:'일본',tags:['나고야','주부','일본','ngo','nagoya','japan']},
+  {code:'HIJ',name:'히로시마공항',city:'히로시마',country:'일본',tags:['히로시마','일본','hij','hiroshima','japan']},
+  {code:'KOJ',name:'가고시마공항',city:'가고시마',country:'일본',tags:['가고시마','일본','koj','kagoshima','japan']},
+  {code:'OIT',name:'오이타공항',city:'오이타',country:'일본',tags:['오이타','일본','oit','oita','japan']},
+  // ── 중국
+  {code:'PEK',name:'베이징수도국제공항',city:'베이징',country:'중국',tags:['베이징','북경','중국','pek','beijing','china']},
+  {code:'PKX',name:'베이징다싱국제공항',city:'베이징',country:'중국',tags:['베이징','다싱','중국','pkx','beijing','daxing','china']},
+  {code:'PVG',name:'상하이푸둥국제공항',city:'상하이',country:'중국',tags:['상하이','푸둥','중국','pvg','shanghai','china']},
+  {code:'SHA',name:'상하이훙차오공항',city:'상하이',country:'중국',tags:['상하이','홍교','중국','sha','shanghai','hongqiao','china']},
+  {code:'CAN',name:'광저우바이윈국제공항',city:'광저우',country:'중국',tags:['광저우','광주','중국','can','guangzhou','china']},
+  {code:'CTU',name:'청두솽류국제공항',city:'청두',country:'중국',tags:['청두','성도','중국','ctu','chengdu','china']},
+  {code:'SZX',name:'선전바오안국제공항',city:'선전',country:'중국',tags:['선전','심천','중국','szx','shenzhen','china']},
+  {code:'XIY',name:'시안셴양국제공항',city:'시안',country:'중국',tags:['시안','서안','중국','xiy','xian','china']},
+  {code:'KMG',name:'쿤밍장수이국제공항',city:'쿤밍',country:'중국',tags:['쿤밍','곤명','중국','kmg','kunming','china']},
+  {code:'HAK',name:'하이커우메이란국제공항',city:'하이커우',country:'중국',tags:['하이커우','해구','하이난','중국','hak','haikou','hainan','china']},
+  {code:'SYX',name:'싼야봉황국제공항',city:'싼야',country:'중국',tags:['싼야','삼아','하이난','중국','syx','sanya','hainan','china']},
+  {code:'DLC',name:'다롄저우수이쯔국제공항',city:'다롄',country:'중국',tags:['다롄','대련','중국','dlc','dalian','china']},
+  {code:'TAO',name:'칭다오교동국제공항',city:'칭다오',country:'중국',tags:['칭다오','청도','중국','tao','qingdao','china']},
+  // ── 홍콩/마카오/대만
   {code:'HKG',name:'홍콩국제공항',city:'홍콩',country:'홍콩',tags:['홍콩','hkg','hong kong','hongkong']},
-  {code:'BKK',name:'수완나품국제공항',city:'방콕',country:'태국',tags:['방콕','수완나품','bkk','bangkok']},
-  {code:'DMK',name:'돈므앙국제공항',city:'방콕',country:'태국',tags:['방콕','돈므앙','dmk','bangkok','donmueang']},
-  {code:'SIN',name:'창이국제공항',city:'싱가포르',country:'싱가포르',tags:['싱가포르','창이','sin','singapore','changi']},
+  {code:'MFM',name:'마카오국제공항',city:'마카오',country:'마카오',tags:['마카오','mfm','macau','macao']},
   {code:'TPE',name:'타오위안국제공항',city:'타이베이',country:'대만',tags:['타이베이','대만','타오위안','tpe','taipei','taiwan']},
-  {code:'PEK',name:'베이징수도국제공항',city:'베이징',country:'중국',tags:['베이징','북경','pek','beijing']},
-  {code:'PKX',name:'베이징다싱국제공항',city:'베이징',country:'중국',tags:['베이징','다싱','pkx','beijing daxing']},
-  {code:'PVG',name:'상하이푸둥국제공항',city:'상하이',country:'중국',tags:['상하이','푸둥','pvg','shanghai']},
-  {code:'SHA',name:'상하이훙차오공항',city:'상하이',country:'중국',tags:['상하이','홍교','sha','shanghai','hongqiao']},
-  {code:'CAN',name:'광저우바이윈국제공항',city:'광저우',country:'중국',tags:['광저우','광주','can','guangzhou']},
+  {code:'KHH',name:'가오슝국제공항',city:'가오슝',country:'대만',tags:['가오슝','고웅','대만','khh','kaohsiung','taiwan']},
+  // ── 동남아
+  {code:'BKK',name:'수완나품국제공항',city:'방콕',country:'태국',tags:['방콕','수완나품','태국','bkk','bangkok','thailand']},
+  {code:'DMK',name:'돈므앙국제공항',city:'방콕',country:'태국',tags:['방콕','돈므앙','태국','dmk','bangkok','donmueang','thailand']},
+  {code:'HKT',name:'푸껫국제공항',city:'푸껫',country:'태국',tags:['푸껫','푸켓','태국','hkt','phuket','thailand']},
+  {code:'CNX',name:'치앙마이국제공항',city:'치앙마이',country:'태국',tags:['치앙마이','태국','cnx','chiang mai','thailand']},
+  {code:'SIN',name:'창이국제공항',city:'싱가포르',country:'싱가포르',tags:['싱가포르','창이','sin','singapore','changi']},
+  {code:'KUL',name:'쿠알라룸푸르국제공항',city:'쿠알라룸푸르',country:'말레이시아',tags:['쿠알라룸푸르','말레이시아','kul','kuala lumpur','malaysia']},
+  {code:'PEN',name:'페낭국제공항',city:'페낭',country:'말레이시아',tags:['페낭','말레이시아','pen','penang','malaysia']},
   {code:'MNL',name:'니노이아키노국제공항',city:'마닐라',country:'필리핀',tags:['마닐라','필리핀','mnl','manila','philippines']},
-  {code:'CEB',name:'막탄세부국제공항',city:'세부',country:'필리핀',tags:['세부','막탄','ceb','cebu']},
-  {code:'DPS',name:'응우라라이국제공항',city:'발리',country:'인도네시아',tags:['발리','덴파사르','dps','bali','denpasar']},
-  {code:'KUL',name:'쿠알라룸푸르국제공항',city:'쿠알라룸푸르',country:'말레이시아',tags:['쿠알라룸푸르','kul','kuala lumpur']},
-  {code:'VIE',name:'비엔나국제공항',city:'비엔티안',country:'라오스',tags:['비엔티안','vie','vientiane']},
-  {code:'RGN',name:'양곤국제공항',city:'양곤',country:'미얀마',tags:['양곤','rgn','yangon']},
-  {code:'HAN',name:'노이바이국제공항',city:'하노이',country:'베트남',tags:['하노이','노이바이','han','hanoi']},
-  {code:'SGN',name:'탄손낫국제공항',city:'호치민',country:'베트남',tags:['호치민','탄손낫','sgn','ho chi minh','saigon']},
-  {code:'DAD',name:'다낭국제공항',city:'다낭',country:'베트남',tags:['다낭','dad','da nang']},
-  {code:'DEL',name:'인디라간디국제공항',city:'뉴델리',country:'인도',tags:['뉴델리','델리','del','delhi','new delhi']},
-  {code:'BOM',name:'차트라파티시바지공항',city:'뭄바이',country:'인도',tags:['뭄바이','봄베이','bom','mumbai']},
-  {code:'DXB',name:'두바이국제공항',city:'두바이',country:'UAE',tags:['두바이','dxb','dubai']},
-  {code:'IST',name:'이스탄불공항',city:'이스탄불',country:'튀르키예',tags:['이스탄불','ist','istanbul','turkey']},
-  {code:'CDG',name:'샤를드골국제공항',city:'파리',country:'프랑스',tags:['파리','프랑스','유럽','cdg','paris','france','europe','charles de gaulle']},
+  {code:'CEB',name:'막탄세부국제공항',city:'세부',country:'필리핀',tags:['세부','막탄','필리핀','ceb','cebu','philippines']},
+  {code:'CRK',name:'클락국제공항',city:'클락',country:'필리핀',tags:['클락','앙헬레스','필리핀','crk','clark','angeles','philippines']},
+  {code:'DPS',name:'응우라라이국제공항',city:'발리',country:'인도네시아',tags:['발리','덴파사르','인도네시아','dps','bali','denpasar','indonesia']},
+  {code:'CGK',name:'수카르노하타국제공항',city:'자카르타',country:'인도네시아',tags:['자카르타','수카르노','인도네시아','cgk','jakarta','indonesia']},
+  {code:'SUB',name:'주안다국제공항',city:'수라바야',country:'인도네시아',tags:['수라바야','인도네시아','sub','surabaya','indonesia']},
+  {code:'HAN',name:'노이바이국제공항',city:'하노이',country:'베트남',tags:['하노이','노이바이','베트남','han','hanoi','vietnam']},
+  {code:'SGN',name:'탄손낫국제공항',city:'호치민',country:'베트남',tags:['호치민','탄손낫','베트남','sgn','ho chi minh','saigon','vietnam']},
+  {code:'DAD',name:'다낭국제공항',city:'다낭',country:'베트남',tags:['다낭','베트남','dad','da nang','vietnam']},
+  {code:'PQC',name:'푸꾸옥국제공항',city:'푸꾸옥',country:'베트남',tags:['푸꾸옥','베트남','pqc','phu quoc','vietnam']},
+  {code:'RGN',name:'양곤국제공항',city:'양곤',country:'미얀마',tags:['양곤','미얀마','rgn','yangon','myanmar']},
+  {code:'REP',name:'씨엠립국제공항',city:'씨엠립',country:'캄보디아',tags:['씨엠립','앙코르','캄보디아','rep','siem reap','cambodia']},
+  {code:'PNH',name:'프놈펜국제공항',city:'프놈펜',country:'캄보디아',tags:['프놈펜','캄보디아','pnh','phnom penh','cambodia']},
+  {code:'VTE',name:'와타이국제공항',city:'비엔티안',country:'라오스',tags:['비엔티안','라오스','vte','vientiane','laos']},
+  // ── 남아시아
+  {code:'DEL',name:'인디라간디국제공항',city:'뉴델리',country:'인도',tags:['뉴델리','델리','인도','del','delhi','new delhi','india']},
+  {code:'BOM',name:'차트라파티시바지공항',city:'뭄바이',country:'인도',tags:['뭄바이','봄베이','인도','bom','mumbai','india']},
+  {code:'BLR',name:'켐페고우다국제공항',city:'벵갈루루',country:'인도',tags:['벵갈루루','방갈로르','인도','blr','bangalore','bengaluru','india']},
+  {code:'MAA',name:'첸나이국제공항',city:'첸나이',country:'인도',tags:['첸나이','마드라스','인도','maa','chennai','india']},
+  {code:'CCU',name:'넷라지수보스공항',city:'콜카타',country:'인도',tags:['콜카타','캘커타','인도','ccu','kolkata','india']},
+  {code:'CMB',name:'반다라나이케국제공항',city:'콜롬보',country:'스리랑카',tags:['콜롬보','스리랑카','cmb','colombo','sri lanka']},
+  {code:'KTM',name:'트리부반국제공항',city:'카트만두',country:'네팔',tags:['카트만두','네팔','ktm','kathmandu','nepal']},
+  {code:'DAC',name:'하즈라트샤잘랄국제공항',city:'다카',country:'방글라데시',tags:['다카','방글라데시','dac','dhaka','bangladesh']},
+  // ── 중앙아시아 / 코카서스
+  {code:'TBS',name:'트빌리시국제공항',city:'트빌리시',country:'조지아',tags:['트빌리시','조지아','그루지야','tbs','tbilisi','georgia']},
+  {code:'BUS',name:'바투미국제공항',city:'바투미',country:'조지아',tags:['바투미','조지아','그루지야','bus','batumi','georgia']},
+  {code:'EVN',name:'즈바르트노츠국제공항',city:'예레반',country:'아르메니아',tags:['예레반','아르메니아','evn','yerevan','armenia']},
+  {code:'GYD',name:'헤이다르알리예프국제공항',city:'바쿠',country:'아제르바이잔',tags:['바쿠','아제르바이잔','gyd','baku','azerbaijan']},
+  {code:'ALA',name:'알마티국제공항',city:'알마티',country:'카자흐스탄',tags:['알마티','카자흐스탄','ala','almaty','kazakhstan']},
+  {code:'NQZ',name:'아스타나국제공항',city:'아스타나',country:'카자흐스탄',tags:['아스타나','누르술탄','카자흐스탄','nqz','astana','nursultan','kazakhstan']},
+  {code:'TAS',name:'타슈켄트국제공항',city:'타슈켄트',country:'우즈베키스탄',tags:['타슈켄트','우즈베키스탄','tas','tashkent','uzbekistan']},
+  {code:'SQD',name:'사마르칸트국제공항',city:'사마르칸트',country:'우즈베키스탄',tags:['사마르칸트','우즈베키스탄','sqd','samarkand','uzbekistan']},
+  {code:'FRU',name:'마나스국제공항',city:'비슈케크',country:'키르기스스탄',tags:['비슈케크','키르기스스탄','fru','bishkek','kyrgyzstan']},
+  // ── 중동
+  {code:'DXB',name:'두바이국제공항',city:'두바이',country:'UAE',tags:['두바이','아랍에미리트','uae','dxb','dubai']},
+  {code:'AUH',name:'아부다비국제공항',city:'아부다비',country:'UAE',tags:['아부다비','아랍에미리트','uae','auh','abu dhabi']},
+  {code:'DOH',name:'하마드국제공항',city:'도하',country:'카타르',tags:['도하','카타르','doh','doha','qatar']},
+  {code:'KWI',name:'쿠웨이트국제공항',city:'쿠웨이트',country:'쿠웨이트',tags:['쿠웨이트','kwi','kuwait']},
+  {code:'BAH',name:'바레인국제공항',city:'마나마',country:'바레인',tags:['바레인','마나마','bah','bahrain','manama']},
+  {code:'MCT',name:'무스카트국제공항',city:'무스카트',country:'오만',tags:['무스카트','오만','mct','muscat','oman']},
+  {code:'TLV',name:'벤구리온국제공항',city:'텔아비브',country:'이스라엘',tags:['텔아비브','이스라엘','tlv','tel aviv','israel']},
+  {code:'AMM',name:'퀸알리아국제공항',city:'암만',country:'요르단',tags:['암만','요르단','amm','amman','jordan']},
+  {code:'BEY',name:'베이루트국제공항',city:'베이루트',country:'레바논',tags:['베이루트','레바논','bey','beirut','lebanon']},
+  {code:'RUH',name:'킹칼리드국제공항',city:'리야드',country:'사우디아라비아',tags:['리야드','사우디','saudiarabia','ruh','riyadh','saudi','saudi arabia']},
+  {code:'JED',name:'킹압둘아지즈국제공항',city:'제다',country:'사우디아라비아',tags:['제다','사우디','jed','jeddah','saudi','saudi arabia']},
+  {code:'THR',name:'이맘호메이니국제공항',city:'테헤란',country:'이란',tags:['테헤란','이란','thr','tehran','iran']},
+  // ── 유럽
   {code:'LHR',name:'히드로공항',city:'런던',country:'영국',tags:['런던','히드로','영국','유럽','lhr','london','heathrow','uk','england','europe']},
+  {code:'LGW',name:'개트윅공항',city:'런던',country:'영국',tags:['런던','개트윅','영국','유럽','lgw','london','gatwick','uk','europe']},
+  {code:'CDG',name:'샤를드골국제공항',city:'파리',country:'프랑스',tags:['파리','프랑스','유럽','cdg','paris','france','europe']},
+  {code:'ORY',name:'오를리공항',city:'파리',country:'프랑스',tags:['파리','오를리','프랑스','유럽','ory','paris','orly','france','europe']},
   {code:'FRA',name:'프랑크푸르트공항',city:'프랑크푸르트',country:'독일',tags:['프랑크푸르트','독일','유럽','fra','frankfurt','germany','europe']},
+  {code:'MUC',name:'뮌헨공항',city:'뮌헨',country:'독일',tags:['뮌헨','뮌헨','독일','유럽','muc','munich','münchen','germany','europe']},
+  {code:'TXL',name:'베를린브란덴부르크공항',city:'베를린',country:'독일',tags:['베를린','독일','유럽','ber','txl','berlin','germany','europe']},
+  {code:'BER',name:'베를린브란덴부르크공항',city:'베를린',country:'독일',tags:['베를린','독일','유럽','ber','berlin','germany','europe']},
   {code:'AMS',name:'스키폴공항',city:'암스테르담',country:'네덜란드',tags:['암스테르담','네덜란드','유럽','ams','amsterdam','schiphol','netherlands','europe']},
-  {code:'ZRH',name:'취리히공항',city:'취리히',country:'스위스',tags:['취리히','스위스','유럽','zrh','zurich','zürich','switzerland','europe']},
-  {code:'FCO',name:'레오나르도다빈치공항',city:'로마',country:'이탈리아',tags:['로마','이탈리아','유럽','fco','rome','roma','italy','europe']},
-  {code:'MAD',name:'아돌포수아레스마드리드바라하스공항',city:'마드리드',country:'스페인',tags:['마드리드','스페인','유럽','mad','madrid','spain','europe']},
+  {code:'ZRH',name:'취리히공항',city:'취리히',country:'스위스',tags:['취리히','스위스','유럽','zrh','zurich','switzerland','europe']},
+  {code:'GVA',name:'제네바코트랭공항',city:'제네바',country:'스위스',tags:['제네바','스위스','유럽','gva','geneva','switzerland','europe']},
+  {code:'FCO',name:'레오나르도다빈치공항',city:'로마',country:'이탈리아',tags:['로마','이탈리아','유럽','fco','rome','italy','europe']},
+  {code:'MXP',name:'말펜사국제공항',city:'밀라노',country:'이탈리아',tags:['밀라노','이탈리아','유럽','mxp','milan','italy','europe']},
+  {code:'VCE',name:'베네치아마르코폴로공항',city:'베네치아',country:'이탈리아',tags:['베네치아','베니스','이탈리아','유럽','vce','venice','italy','europe']},
+  {code:'MAD',name:'마드리드바라하스공항',city:'마드리드',country:'스페인',tags:['마드리드','스페인','유럽','mad','madrid','spain','europe']},
   {code:'BCN',name:'엘프라트공항',city:'바르셀로나',country:'스페인',tags:['바르셀로나','스페인','유럽','bcn','barcelona','spain','europe']},
-  {code:'JFK',name:'존F케네디국제공항',city:'뉴욕',country:'미국',tags:['뉴욕','뉴욕시','미국','jfk','new york','nyc','usa','america']},
-  {code:'LAX',name:'로스앤젤레스국제공항',city:'로스앤젤레스',country:'미국',tags:['로스앤젤레스','라','미국','lax','los angeles','usa','america']},
-  {code:'ORD',name:'오헤어국제공항',city:'시카고',country:'미국',tags:['시카고','미국','ord','chicago','ohare','usa','america']},
+  {code:'VIE',name:'비엔나국제공항',city:'비엔나',country:'오스트리아',tags:['비엔나','빈','오스트리아','유럽','vie','vienna','austria','europe']},
+  {code:'PRG',name:'바츨라프하벨공항',city:'프라하',country:'체코',tags:['프라하','체코','유럽','prg','prague','czech','europe']},
+  {code:'WAW',name:'쇼팽국제공항',city:'바르샤바',country:'폴란드',tags:['바르샤바','폴란드','유럽','waw','warsaw','poland','europe']},
+  {code:'BUD',name:'페렌츠리스트국제공항',city:'부다페스트',country:'헝가리',tags:['부다페스트','헝가리','유럽','bud','budapest','hungary','europe']},
+  {code:'ATH',name:'엘레프테리오스베니젤로스공항',city:'아테네',country:'그리스',tags:['아테네','그리스','유럽','ath','athens','greece','europe']},
+  {code:'IST',name:'이스탄불공항',city:'이스탄불',country:'튀르키예',tags:['이스탄불','터키','튀르키예','유럽','ist','istanbul','turkey','europe']},
+  {code:'SAW',name:'사비하괵첸공항',city:'이스탄불',country:'튀르키예',tags:['이스탄불','사비하','터키','튀르키예','saw','istanbul','sabiha','turkey','europe']},
+  {code:'OSL',name:'오슬로가르데르모엔공항',city:'오슬로',country:'노르웨이',tags:['오슬로','노르웨이','유럽','osl','oslo','norway','europe']},
+  {code:'CPH',name:'코펜하겐공항',city:'코펜하겐',country:'덴마크',tags:['코펜하겐','덴마크','유럽','cph','copenhagen','denmark','europe']},
+  {code:'ARN',name:'스톡홀름알란다공항',city:'스톡홀름',country:'스웨덴',tags:['스톡홀름','스웨덴','유럽','arn','stockholm','sweden','europe']},
+  {code:'HEL',name:'헬싱키반타국제공항',city:'헬싱키',country:'핀란드',tags:['헬싱키','핀란드','유럽','hel','helsinki','finland','europe']},
+  {code:'DUB',name:'더블린공항',city:'더블린',country:'아일랜드',tags:['더블린','아일랜드','유럽','dub','dublin','ireland','europe']},
+  {code:'LIS',name:'움베르토델가도공항',city:'리스본',country:'포르투갈',tags:['리스본','포르투갈','유럽','lis','lisbon','portugal','europe']},
+  {code:'BRU',name:'브뤼셀국제공항',city:'브뤼셀',country:'벨기에',tags:['브뤼셀','벨기에','유럽','bru','brussels','belgium','europe']},
+  {code:'ZAG',name:'자그레브국제공항',city:'자그레브',country:'크로아티아',tags:['자그레브','크로아티아','유럽','zag','zagreb','croatia','europe']},
+  {code:'DBV',name:'두브로브니크공항',city:'두브로브니크',country:'크로아티아',tags:['두브로브니크','크로아티아','유럽','dbv','dubrovnik','croatia','europe']},
+  {code:'SVO',name:'셰레메티예보국제공항',city:'모스크바',country:'러시아',tags:['모스크바','러시아','svo','moscow','russia']},
+  {code:'DME',name:'도모데도보국제공항',city:'모스크바',country:'러시아',tags:['모스크바','러시아','dme','moscow','domodedovo','russia']},
+  {code:'LED',name:'풀코보공항',city:'상트페테르부르크',country:'러시아',tags:['상트페테르부르크','러시아','led','saint petersburg','russia']},
+  {code:'KBP',name:'보리스필국제공항',city:'키이우',country:'우크라이나',tags:['키이우','키예프','우크라이나','kbp','kyiv','kiev','ukraine']},
+  {code:'RIX',name:'리가국제공항',city:'리가',country:'라트비아',tags:['리가','라트비아','유럽','rix','riga','latvia','europe']},
+  {code:'TLL',name:'레나르트메리탈린공항',city:'탈린',country:'에스토니아',tags:['탈린','에스토니아','유럽','tll','tallinn','estonia','europe']},
+  {code:'VNO',name:'빌뉴스공항',city:'빌뉴스',country:'리투아니아',tags:['빌뉴스','리투아니아','유럽','vno','vilnius','lithuania','europe']},
+  {code:'SKP',name:'알렉산다르대왕공항',city:'스코페',country:'북마케도니아',tags:['스코페','마케도니아','유럽','skp','skopje','macedonia','europe']},
+  {code:'SOF',name:'소피아공항',city:'소피아',country:'불가리아',tags:['소피아','불가리아','유럽','sof','sofia','bulgaria','europe']},
+  {code:'OTP',name:'헨리코안다국제공항',city:'부쿠레슈티',country:'루마니아',tags:['부쿠레슈티','루마니아','유럽','otp','bucharest','romania','europe']},
+  {code:'BEG',name:'니콜라테슬라국제공항',city:'베오그라드',country:'세르비아',tags:['베오그라드','세르비아','유럽','beg','belgrade','serbia','europe']},
+  // ── 아프리카
+  {code:'CAI',name:'카이로국제공항',city:'카이로',country:'이집트',tags:['카이로','이집트','cai','cairo','egypt']},
+  {code:'JNB',name:'올리버탐보국제공항',city:'요하네스버그',country:'남아프리카',tags:['요하네스버그','남아프리카','jnb','johannesburg','south africa']},
+  {code:'CPT',name:'케이프타운국제공항',city:'케이프타운',country:'남아프리카',tags:['케이프타운','남아프리카','cpt','cape town','south africa']},
+  {code:'NBO',name:'조모케냐타국제공항',city:'나이로비',country:'케냐',tags:['나이로비','케냐','nbo','nairobi','kenya']},
+  {code:'ADD',name:'아디스아바바볼레국제공항',city:'아디스아바바',country:'에티오피아',tags:['아디스아바바','에티오피아','add','addis ababa','ethiopia']},
+  {code:'CMN',name:'모하메드5세국제공항',city:'카사블랑카',country:'모로코',tags:['카사블랑카','모로코','cmn','casablanca','morocco']},
+  {code:'TUN',name:'카르타고국제공항',city:'튀니스',country:'튀니지',tags:['튀니스','튀니지','tun','tunis','tunisia']},
+  {code:'LOS',name:'무르탈라모하메드국제공항',city:'라고스',country:'나이지리아',tags:['라고스','나이지리아','los','lagos','nigeria']},
+  // ── 북미
+  {code:'JFK',name:'존F케네디국제공항',city:'뉴욕',country:'미국',tags:['뉴욕','미국','jfk','new york','nyc','usa','america']},
+  {code:'EWR',name:'뉴어크리버티국제공항',city:'뉴욕',country:'미국',tags:['뉴욕','뉴어크','미국','ewr','newark','new york','usa','america']},
+  {code:'LAX',name:'로스앤젤레스국제공항',city:'로스앤젤레스',country:'미국',tags:['로스앤젤레스','라','미국','lax','los angeles','la','usa','america']},
+  {code:'ORD',name:'오헤어국제공항',city:'시카고',country:'미국',tags:['시카고','미국','ord','chicago','usa','america']},
   {code:'SFO',name:'샌프란시스코국제공항',city:'샌프란시스코',country:'미국',tags:['샌프란시스코','미국','sfo','san francisco','usa','america']},
   {code:'SEA',name:'시애틀타코마국제공항',city:'시애틀',country:'미국',tags:['시애틀','미국','sea','seattle','usa','america']},
   {code:'IAD',name:'워싱턴덜레스국제공항',city:'워싱턴DC',country:'미국',tags:['워싱턴','워싱턴dc','미국','iad','washington','dulles','usa','america']},
+  {code:'DCA',name:'로널드레이건국제공항',city:'워싱턴DC',country:'미국',tags:['워싱턴','미국','dca','washington','reagan','usa','america']},
   {code:'ATL',name:'하츠필드잭슨애틀랜타국제공항',city:'애틀랜타',country:'미국',tags:['애틀랜타','미국','atl','atlanta','usa','america']},
   {code:'LAS',name:'해리리드국제공항',city:'라스베이거스',country:'미국',tags:['라스베이거스','미국','las','las vegas','usa','america']},
+  {code:'DFW',name:'달라스포트워스국제공항',city:'달라스',country:'미국',tags:['달라스','미국','dfw','dallas','usa','america']},
+  {code:'MIA',name:'마이애미국제공항',city:'마이애미',country:'미국',tags:['마이애미','미국','mia','miami','usa','america']},
+  {code:'BOS',name:'로건국제공항',city:'보스턴',country:'미국',tags:['보스턴','미국','bos','boston','usa','america']},
+  {code:'DEN',name:'덴버국제공항',city:'덴버',country:'미국',tags:['덴버','미국','den','denver','usa','america']},
+  {code:'HNL',name:'다니엘K이노우에국제공항',city:'호놀룰루',country:'미국',tags:['호놀룰루','하와이','미국','hnl','honolulu','hawaii','usa','america']},
   {code:'YVR',name:'밴쿠버국제공항',city:'밴쿠버',country:'캐나다',tags:['밴쿠버','캐나다','yvr','vancouver','canada']},
   {code:'YYZ',name:'토론토피어슨국제공항',city:'토론토',country:'캐나다',tags:['토론토','캐나다','yyz','toronto','canada']},
+  {code:'YUL',name:'트뤼도국제공항',city:'몬트리올',country:'캐나다',tags:['몬트리올','캐나다','yul','montreal','canada']},
+  {code:'YYC',name:'캘거리국제공항',city:'캘거리',country:'캐나다',tags:['캘거리','캐나다','yyc','calgary','canada']},
+  {code:'MEX',name:'베니토후아레스국제공항',city:'멕시코시티',country:'멕시코',tags:['멕시코시티','멕시코','mex','mexico city','mexico']},
+  {code:'CUN',name:'칸쿤국제공항',city:'칸쿤',country:'멕시코',tags:['칸쿤','멕시코','cun','cancun','mexico']},
+  // ── 중남미
+  {code:'GRU',name:'과룰류스국제공항',city:'상파울루',country:'브라질',tags:['상파울루','브라질','gru','sao paulo','brazil']},
+  {code:'GIG',name:'갈레앙국제공항',city:'리우데자네이루',country:'브라질',tags:['리우데자네이루','브라질','gig','rio de janeiro','brazil']},
+  {code:'EZE',name:'에세이사국제공항',city:'부에노스아이레스',country:'아르헨티나',tags:['부에노스아이레스','아르헨티나','eze','buenos aires','argentina']},
+  {code:'SCL',name:'아르투로메리노베니테스국제공항',city:'산티아고',country:'칠레',tags:['산티아고','칠레','scl','santiago','chile']},
+  {code:'BOG',name:'엘도라도국제공항',city:'보고타',country:'콜롬비아',tags:['보고타','콜롬비아','bog','bogota','colombia']},
+  {code:'LIM',name:'호르헤차베스국제공항',city:'리마',country:'페루',tags:['리마','페루','lim','lima','peru']},
+  // ── 오세아니아
   {code:'SYD',name:'킹스퍼드스미스공항',city:'시드니',country:'호주',tags:['시드니','호주','syd','sydney','australia']},
   {code:'MEL',name:'멜버른공항',city:'멜버른',country:'호주',tags:['멜버른','호주','mel','melbourne','australia']},
-  {code:'GUM',name:'괌국제공항',city:'괌',country:'괌',tags:['괌','gum','guam']},
-  {code:'SPN',name:'사이판국제공항',city:'사이판',country:'사이판',tags:['사이판','spn','saipan']},
-  {code:'HNL',name:'다니엘K이노우에국제공항',city:'호놀룰루',country:'미국',tags:['호놀룰루','하와이','미국','hnl','honolulu','hawaii','usa','america']},
+  {code:'BNE',name:'브리즈번공항',city:'브리즈번',country:'호주',tags:['브리즈번','호주','bne','brisbane','australia']},
+  {code:'PER',name:'퍼스공항',city:'퍼스',country:'호주',tags:['퍼스','호주','per','perth','australia']},
+  {code:'AKL',name:'오클랜드국제공항',city:'오클랜드',country:'뉴질랜드',tags:['오클랜드','뉴질랜드','akl','auckland','new zealand']},
+  {code:'CHC',name:'크라이스트처치국제공항',city:'크라이스트처치',country:'뉴질랜드',tags:['크라이스트처치','뉴질랜드','chc','christchurch','new zealand']},
+  // ── 태평양섬
+  {code:'GUM',name:'괌국제공항',city:'괌',country:'괌',tags:['괌','gum','guam','미국','usa']},
+  {code:'SPN',name:'사이판국제공항',city:'사이판',country:'사이판',tags:['사이판','spn','saipan','미국','usa']},
+  {code:'PPT',name:'파아아국제공항',city:'파페에테',country:'프랑스령폴리네시아',tags:['파페에테','타히티','ppt','papeete','tahiti','french polynesia']},
 ];
 
 // ───────────────────────────────
@@ -1189,11 +1321,11 @@ function openBookModal(info) {
       const goClass    = ota ? {A:'safe',B:'safe',C:'caution',D:'danger'}[ota.grade] : 'safe';
       offersSection = `<div class="modal-offers">
         <div class="modal-trust-header">🛡 예약처</div>
-        <a href="${info.bookUrl}" target="_blank" rel="noopener" class="modal-offer-row modal-go ${goClass}">
+        <button type="button" onclick="window.open('${info.bookUrl}','_blank','noopener,noreferrer')" class="modal-offer-row modal-go ${goClass}">
           <span class="modal-offer-name">${info.providerName||'예약 사이트'}</span>
           <span class="modal-offer-price">₩${krw.toLocaleString()}</span>
           <span class="modal-offer-arrow">→</span>
-        </a>
+        </button>
       </div>`;
     } else {
       offersSection = `<div class="modal-no-ota">예약 링크를 불러오지 못했습니다.<br><small>잠시 후 다시 시도해 주세요.</small></div>`;
@@ -1219,11 +1351,12 @@ function openBookModal(info) {
         ? `<span style="font-size:10px;padding:2px 6px;border-radius:4px;background:#1a3a1f;color:#3fb950;border:1px solid #238636;margin-left:6px;">항공사 직접</span>` : '';
       const warn = ota?.grade==='D'
         ? `<span style="font-size:10px;color:#f85149;margin-left:6px;">⚠ 주의</span>` : '';
-      return `<a href="${url}" target="_blank" rel="noopener" class="modal-offer-row modal-go ${goClass}">
+      const safeUrl = url.replace(/'/g, "\\'");
+      return `<button type="button" onclick="window.open('${safeUrl}','_blank','noopener,noreferrer')" class="modal-offer-row modal-go ${goClass}">
         <span class="modal-offer-name">${name}${badge}${warn}</span>
         <span class="modal-offer-price">₩${offerPrice.toLocaleString()}</span>
         <span class="modal-offer-arrow">→</span>
-      </a>`;
+      </button>`;
     }).join('');
     offersSection = `<div class="modal-offers">
       <div class="modal-trust-header">🛡 예약처 선택 (${sorted.length}곳)</div>

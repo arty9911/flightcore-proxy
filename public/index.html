@@ -183,6 +183,13 @@ header{padding:20px 24px;border-bottom:1px solid #21262d;display:flex;align-item
 .modal-go.caution{background:linear-gradient(135deg,#9e6a03,#d29922);}
 .modal-go.danger{background:linear-gradient(135deg,#b91c1c,#f85149);}
 .modal-no-ota{text-align:center;padding:16px;color:#8b949e;font-size:13px;}
+.modal-offers{margin-bottom:16px;}
+.modal-offer-row{display:flex;align-items:center;gap:8px;padding:12px 14px;border-radius:10px;margin-bottom:6px;text-decoration:none;font-weight:700;font-size:14px;color:#fff;cursor:pointer;flex:unset;}
+.modal-offer-name{flex:1;font-size:13px;}
+.modal-offer-price{font-size:14px;font-weight:800;white-space:nowrap;}
+.modal-offer-arrow{font-size:14px;opacity:.8;}
+.spinner{width:28px;height:28px;border:3px solid #30363d;border-top-color:#58a6ff;border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
 </style>
 </head>
 <body>
@@ -1156,45 +1163,65 @@ function trustHtml(ota) {
 // BOOKING MODAL
 // ───────────────────────────────
 function openBookModal(info) {
-  const ota = getOtaTrust(info.bookUrl);
-  const gradeColor = ota ? {A:'#3fb950',B:'#58a6ff',C:'#d29922',D:'#f85149'}[ota.grade] : '#8b949e';
-  const gradeBg    = ota ? {A:'#1a3a1f',B:'#1a2d3a',C:'#2d2000',D:'#2d1a1a'}[ota.grade] : '#161b22';
-  const gradeBorder= ota ? {A:'#238636',B:'#1f6feb',C:'#9e6a03',D:'#b91c1c'}[ota.grade] : '#30363d';
-  const goClass    = ota ? {A:'safe',B:'safe',C:'caution',D:'danger'}[ota.grade] : 'safe';
   const durStr = info.dur ? `${Math.floor(info.dur/60)}시간 ${info.dur%60}분` : '';
   const stopLabel = info.stops===0?'직항':info.stops===1?'1회 경유':`${info.stops}회 경유`;
   const krw = Math.round(info.price*1380);
 
-  let otaSection = '';
-  if (!ota) {
-    otaSection = `<div class="modal-no-ota">예약 사이트 정보를 확인할 수 없습니다.<br><small>외부 사이트로 이동합니다.</small></div>`;
+  // allOffers: Ignav booking-links API에서 받은 예약처 목록
+  const offers = info.allOffers || [];
+
+  let offersSection = '';
+  if (offers.length === 0) {
+    // fallback: 단일 bookUrl만 있는 경우
+    if (info.bookUrl && info.bookUrl !== '#') {
+      const ota = getOtaTrust(info.bookUrl);
+      const gradeColor = ota ? {A:'#3fb950',B:'#58a6ff',C:'#d29922',D:'#f85149'}[ota.grade] : '#8b949e';
+      const gradeBg    = ota ? {A:'#1a3a1f',B:'#1a2d3a',C:'#2d2000',D:'#2d1a1a'}[ota.grade] : '#161b22';
+      const gradeBorder= ota ? {A:'#238636',B:'#1f6feb',C:'#9e6a03',D:'#b91c1c'}[ota.grade] : '#30363d';
+      const goClass    = ota ? {A:'safe',B:'safe',C:'caution',D:'danger'}[ota.grade] : 'safe';
+      offersSection = `<div class="modal-offers">
+        <div class="modal-trust-header">🛡 예약처</div>
+        <a href="${info.bookUrl}" target="_blank" class="modal-offer-row modal-go ${goClass}" onclick="closeModal()">
+          <span class="modal-offer-name">${info.providerName||'예약 사이트'}</span>
+          <span class="modal-offer-price">₩${krw.toLocaleString()}</span>
+          <span class="modal-offer-arrow">→</span>
+        </a>
+      </div>`;
+    } else {
+      offersSection = `<div class="modal-no-ota">예약 링크를 불러오지 못했습니다.<br><small>잠시 후 다시 시도해 주세요.</small></div>`;
+    }
   } else {
-    const warn = ota.warning ? `<div class="modal-warn-box ${ota.grade==='D'?'danger':''}">
-      ${ota.grade==='D'?'🚨':'⚠'} ${ota.warning}
-    </div>` : '';
-    const goodTags = ota.goods.map(g=>`<span class="modal-tag good">✓ ${g}</span>`).join('');
-    const badTags  = ota.bads.map(b=>`<span class="modal-tag bad">✗ ${b}</span>`).join('');
-    const complaint = ota.complaints > 0
-      ? `소비자원 피해 신청 <b>${ota.complaints.toLocaleString()}건</b> (2022~2025)` : '항공사 직접 발권 · 소비자원 민원 없음';
-    otaSection = `
-    <div class="modal-trust">
-      <div class="modal-trust-header">🛡 예약처 신뢰도</div>
-      <div class="modal-trust-body">
-        <div class="modal-grade-row">
-          <span class="modal-grade-badge" style="background:${gradeBg};color:${gradeColor};border:1.5px solid ${gradeBorder}">${ota.grade}</span>
-          <div>
-            <div class="modal-ota-name">${ota.name}</div>
-            <div class="modal-ota-sub">${complaint}</div>
-          </div>
-        </div>
-        ${warn}
-        <div class="modal-tags">${goodTags}${badTags}</div>
-      </div>
+    // 항공사 직항 먼저, 그 다음 OTA
+    const sorted = [...offers].sort((a,b) => {
+      const aType = (a.provider_type||'').toLowerCase();
+      const bType = (b.provider_type||'').toLowerCase();
+      if (aType==='airline' && bType!=='airline') return -1;
+      if (bType==='airline' && aType!=='airline') return 1;
+      return (a.price?.amount||0) - (b.price?.amount||0);
+    });
+    const rows = sorted.map(offer => {
+      const url = offer.url || offer.booking_url || '#';
+      const name = offer.provider_name || offer.name || '예약 사이트';
+      const ptype = (offer.provider_type||'').toLowerCase();
+      const isAirline = ptype==='airline';
+      const offerPrice = offer.price?.amount ? Math.round(offer.price.amount*1380) : krw;
+      const ota = getOtaTrust(url);
+      const goClass = ota ? {A:'safe',B:'safe',C:'caution',D:'danger'}[ota.grade] : (isAirline?'safe':'safe');
+      const badge = isAirline
+        ? `<span style="font-size:10px;padding:2px 6px;border-radius:4px;background:#1a3a1f;color:#3fb950;border:1px solid #238636;margin-left:6px;">항공사 직접</span>` : '';
+      const warn = ota?.grade==='D'
+        ? `<span style="font-size:10px;color:#f85149;margin-left:6px;">⚠ 주의</span>` : '';
+      return `<a href="${url}" target="_blank" class="modal-offer-row modal-go ${goClass}" onclick="closeModal()">
+        <span class="modal-offer-name">${name}${badge}${warn}</span>
+        <span class="modal-offer-price">₩${offerPrice.toLocaleString()}</span>
+        <span class="modal-offer-arrow">→</span>
+      </a>`;
+    }).join('');
+    offersSection = `<div class="modal-offers">
+      <div class="modal-trust-header">🛡 예약처 선택 (${sorted.length}곳)</div>
+      ${rows}
     </div>`;
   }
-
-  const dangerNote = ota?.grade==='D'
-    ? `<div style="font-size:11px;color:#f85149;text-align:center;margin-top:10px;">⚠ 위 사이트는 소비자 피해 위험이 높습니다. 충분히 검토 후 이용하세요.</div>` : '';
 
   const html = `
   <div class="modal-overlay" id="bookModal" onclick="closeModalOutside(event)">
@@ -1214,18 +1241,14 @@ function openBookModal(info) {
           <span class="mfr-val">${info.airline||'—'}</span>
         </div>
         <div class="modal-flight-row" style="margin-top:8px;padding-top:8px;border-top:1px solid #21262d;">
-          <span class="mfr-label">총 금액</span>
+          <span class="mfr-label">최저가</span>
           <span class="mfr-price">₩${krw.toLocaleString()}</span>
         </div>
       </div>
-      ${otaSection}
+      ${offersSection}
       <div class="modal-actions">
         <button class="modal-cancel" onclick="closeModal()">← 돌아가기</button>
-        <a href="${info.bookUrl}" target="_blank" class="modal-go ${goClass}" onclick="closeModal()">
-          ${ota?.grade==='D'?'위험 감수하고 예약하기':'예약 사이트로 이동 →'}
-        </a>
       </div>
-      ${dangerNote}
     </div>
   </div>`;
 
@@ -1269,9 +1292,49 @@ function extractCode(val){
 // ───────────────────────────────
 var flightStore = [];
 
-function bookFlight(idx) {
+async function bookFlight(idx) {
   var info = flightStore[idx];
-  if (info) openBookModal(info);
+  if (!info) return;
+
+  // 로딩 모달 표시
+  document.getElementById('modalRoot').innerHTML = `
+  <div class="modal-overlay" id="bookModal">
+    <div class="modal-box" style="text-align:center;padding:40px;">
+      <div class="spinner" style="margin:0 auto 16px;"></div>
+      <div style="color:#8b949e;font-size:.9rem;">예약 링크를 불러오는 중...</div>
+    </div>
+  </div>`;
+
+  try {
+    // booking-links API 호출
+    let bookingData;
+    const body = { ignav_id: info.ignavId };
+    if (proxyBase) {
+      const r = await fetch(`${proxyBase}/api/fares?type=booking-links`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(apiKey ? { 'X-Api-Key': apiKey } : {}) },
+        body: JSON.stringify(body),
+      });
+      bookingData = await r.json();
+    } else {
+      const r = await fetch('https://ignav.com/api/fares/booking-links', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Api-Key': apiKey },
+        body: JSON.stringify(body),
+      });
+      bookingData = await r.json();
+    }
+
+    // 첫 번째 booking option URL 추출
+    const offers = bookingData?.booking_options || bookingData?.offers || bookingData?.results || [];
+    const firstOffer = offers[0];
+    const bookUrl = firstOffer?.url || firstOffer?.booking_url || '#';
+    const providerName = firstOffer?.provider_name || firstOffer?.name || '';
+
+    openBookModal({ ...info, bookUrl, providerName, allOffers: offers });
+  } catch (e) {
+    openBookModal({ ...info, bookUrl: '#', providerName: '', allOffers: [] });
+  }
 }
 
 // ───────────────────────────────
@@ -1299,12 +1362,12 @@ function renderResults(data,origin,dest,depDate,retDate){
     const arrTime=getArrTime(item);
     const isCheapest=item===cheapest;
     const isFastest=item===fastest&&item!==cheapest;
-    const bookUrl=item.booking_url||item.booking_link||'#';
+    const ignavId=item.ignav_id||item.id||'';
     const stopLabel=stops===0?'직항':stops===1?'1회 경유':`${stops}회 경유`;
     const stopClass=stops===0?'direct':stops===1?'one':'multi';
     const durStr=dur?`${Math.floor(dur/60)}시간 ${dur%60}분`:'';
     const idx=flightStore.length;
-    flightStore.push({price,depTime,arrTime,airline,origin,dest,stops,dur,bookUrl});
+    flightStore.push({price,depTime,arrTime,airline,origin,dest,stops,dur,ignavId});
 
     html+=`
     <div class="flight-card">
@@ -1332,11 +1395,11 @@ function renderResults(data,origin,dest,depDate,retDate){
         </div>
         <div style="display:flex;gap:7px;align-items:center;">
       <button class="add-cmp-btn" data-cmp-idx="${idx}" onclick="toggleCompare(${idx})">+ 비교</button>
-      <button class="book-btn" data-flight-idx="${idx}" ${bookUrl==='#'?'disabled':''}>예약하기 →</button>
+      <button class="book-btn" data-flight-idx="${idx}" ${ignavId?'':'disabled'}>예약하기 →</button>
     </div>
       </div>
-      ${trustHtml(getOtaTrust(bookUrl))}
-      ${feeHtml(price, bookUrl, airline)}
+      ${trustHtml(null)}
+      ${feeHtml(price, '', airline)}
     </div>`;
   });
   document.getElementById('results').innerHTML=html;

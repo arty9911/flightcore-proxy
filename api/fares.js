@@ -17,7 +17,8 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'POST only' });
   }
 
-  const type = req.query.type === 'round-trip' ? 'round-trip' : 'one-way';
+  const VALID_TYPES = ['one-way', 'round-trip', 'booking-links'];
+  const type = VALID_TYPES.includes(req.query.type) ? req.query.type : 'one-way';
   const apiKey = req.headers['x-api-key'] || process.env.IGNAV_API_KEY;
 
   if (!apiKey) {
